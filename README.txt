@@ -1,0 +1,1 @@
+This is a folder that will be used for the jobdata app that will be utilized for resume optimization. 

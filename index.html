@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Experience Editor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: "Inter", sans-serif;
+            background-color: #f0f2f5;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 1.5rem;
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        th {
+            background-color: #f9fafb;
+            font-weight: 600;
+            color: #374151;
+        }
+        tr:hover {
+            background-color: #f3f4f6;
+        }
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            resize: vertical;
+        }
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s, box-shadow 0.2s;
+        }
+        .btn-primary {
+            background-color: #4f46e5;
+            color: white;
+            box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+        }
+        .btn-primary:hover {
+            background-color: #4338ca;
+            box-shadow: 0 4px 8px rgba(79, 70, 229, 0.3);
+        }
+        .btn-danger {
+            background-color: #ef4444;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #dc2626;
+        }
+        .btn-success {
+            background-color: #22c55e;
+            color: white;
+        }
+        .btn-success:hover {
+            background-color: #16a34a;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #4f46e5;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-6">
+    <div id="loading" class="loading-overlay hidden">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="container">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Job Experience Editor</h1>
+
+        <p class="text-sm text-gray-600 mb-4 text-center">Your User ID: <span id="userIdDisplay" class="font-semibold text-gray-800">Loading...</span></p>
+
+        <div id="message-box" class="hidden bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <span class="block sm:inline" id="message-content"></span>
+            <span class="absolute top-0 bottom-0 right-0 px-4 py-3 cursor-pointer" onclick="document.getElementById('message-box').classList.add('hidden')">
+                <svg class="fill-current h-6 w-6 text-blue-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.103l-2.651 3.746a1.2 1.2 0 1 1-1.697-1.697l2.758-3.899L5.65 6.551a1.2 1.2 0 0 1 1.697-1.697L10 8.897l2.651-3.746a1.2 1.2 0 0 1 1.697 1.697l-2.758 3.899 2.758 3.899z"/></svg>
+            </span>
+        </div>
+
+        <div class="mb-6">
+            <button id="addRowBtn" class="btn btn-primary mr-2">Add New Row</button>
+            <!-- Save button is less critical as data updates on input change, but good for explicit save -->
+            <button id="saveBtn" class="btn btn-success">Force Save Data</button>
+        </div>
+
+        <div class="overflow-x-auto rounded-lg shadow">
+            <table class="min-w-full bg-white rounded-lg" id="jobTable">
+                <thead>
+                    <tr>
+                        <th class="py-3 px-4 uppercase text-xs text-gray-600">Job Name</th>
+                        <th class="py-3 px-4 uppercase text-xs text-gray-600">Job Company</th>
+                        <th class="py-3 px-4 uppercase text-xs text-gray-600">Job Date Start</th>
+                        <th class="py-3 px-4 uppercase text-xs text-gray-600">Job Date End</th>
+                        <th class="py-3 px-4 uppercase text-xs text-gray-600">Job Description</th>
+                        <th class="py-3 px-4 uppercase text-xs text-gray-600">Job Skills</th>
+                        <th class="py-3 px-4 uppercase text-xs text-gray-600">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Table rows will be populated here by JavaScript -->
+                    <tr><td colspan="7" class="text-center py-4 text-gray-500">Loading job data...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module">
+        // Firebase imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global variables provided by the Canvas environment
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // Firebase instances
+        let app;
+        let db;
+        let auth;
+        let userId = null; // Will store the authenticated user ID
+
+        // Array to store job data locally, synced with Firestore
+        let jobData = [];
+
+        // Pre-fill with data from the resume (used if no data in Firestore)
+        const resumeData = [
+            {
+                "Job Name": "Program Manager",
+                "Job Company": "Jackson Dawson",
+                "Job Date Start": "May 2021",
+                "Job Date End": "June 2025",
+                "Job Description": "Managed 3 programs and their teams simultaneously in gamification, learning management, and event management. Managed resources, timeline, and budget for those programs. Managed strategy to execution of applications ranging from gamification websites, off-roading events, and learning management websites. Managed projects in Agile using Azure DevOps.",
+                "Job Skills": "Program Management, Team Leadership, Budget Management, Agile, Azure DevOps, Gamification, Learning Management, Event Management"
+            },
+            {
+                "Job Name": "Technology Project Manager - Dealer Websites",
+                "Job Company": "FordDirect",
+                "Job Date Start": "October 2015",
+                "Job Date End": "May 2021",
+                "Job Description": "Managed technology products for the FordDirect Dealer Websites Program. Products/projects include: Dealer Website (Ford & Lincoln, US & Canada) integration of Ford/FordDirect services with third party website vendors, Domain Management, Adobe Launch Analytics Tagging, & Digital Campaigns.",
+                "Job Skills": "Project Management, Website Management, Vendor Management, Domain Management, Adobe Launch, Digital Campaigns, Ford, Lincoln"
+            },
+            {
+                "Job Name": "eCommerce Content Manager",
+                "Job Company": "Modern Builders Supply - BuyMBS.com",
+                "Job Date Start": "June 2013",
+                "Job Date End": "October 2015",
+                "Job Description": "Lead team of content specialists adding content and products for the BuyMBS.com eCommerce website selling construction equipment and supplies.",
+                "Job Skills": "eCommerce, Content Management, Team Leadership, Product Management, Website Content"
+            },
+            {
+                "Job Name": "Website Strategy Manager",
+                "Job Company": "Burkett Restaurant Equipment - Burkett.com",
+                "Job Date Start": "June 2010",
+                "Job Date End": "April 2013",
+                "Job Description": "Managed day to day operations of online eCommerce website for a Restaurant Equipment Dealer",
+                "Job Skills": "Website Strategy, eCommerce Operations, Website Management"
+            },
+            {
+                "Job Name": "Director of Internet Operations",
+                "Job Company": "FanClubCard.com",
+                "Job Date Start": "July 2008",
+                "Job Date End": "November 2010",
+                "Job Description": "Managed business directory website, including content, email marketing, and social media.",
+                "Job Skills": "Internet Operations, Content Management, Email Marketing, Social Media, Business Directory"
+            }
+        ];
+
+        const loadingOverlay = document.getElementById('loading');
+        const userIdDisplay = document.getElementById('userIdDisplay');
+
+        // Function to show/hide loading spinner
+        function showLoading() {
+            loadingOverlay.classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            loadingOverlay.classList.add('hidden');
+        }
+
+        // Function to display messages to the user
+        function showMessage(message, type = 'info') {
+            const messageBox = document.getElementById('message-box');
+            const messageContent = document.getElementById('message-content');
+            messageContent.textContent = message;
+            messageBox.classList.remove('hidden', 'bg-blue-100', 'bg-green-100', 'bg-red-100', 'border-blue-400', 'border-green-400', 'border-red-400', 'text-blue-700', 'text-green-700', 'text-red-700');
+
+            if (type === 'success') {
+                messageBox.classList.add('bg-green-100', 'border-green-400', 'text-green-700');
+            } else if (type === 'error') {
+                messageBox.classList.add('bg-red-100', 'border-red-400', 'text-red-700');
+            } else { // info
+                messageBox.classList.add('bg-blue-100', 'border-blue-400', 'text-blue-700');
+            }
+            messageBox.classList.remove('hidden');
+            setTimeout(() => {
+                messageBox.classList.add('hidden'); // Auto-hide after 5 seconds
+            }, 5000);
+        }
+
+        // Function to render the table rows based on jobData
+        function renderTable() {
+            const tbody = document.querySelector('#jobTable tbody');
+            tbody.innerHTML = ''; // Clear existing rows
+
+            if (jobData.length === 0) {
+                const row = tbody.insertRow();
+                const cell = row.insertCell();
+                cell.colSpan = 7;
+                cell.className = "text-center py-4 text-gray-500";
+                cell.textContent = "No job entries. Add a new row to get started!";
+                return;
+            }
+
+            // Sort jobData by start date in descending order (most recent first)
+            jobData.sort((a, b) => {
+                const dateA = new Date(a["Job Date Start"]);
+                const dateB = new Date(b["Job Date Start"]);
+                return dateB - dateA;
+            });
+
+
+            jobData.forEach((job, index) => {
+                const row = tbody.insertRow();
+                // Store Firestore document ID in dataset for update/delete operations
+                row.dataset.docId = job.id;
+
+                // Create cells for each column, making them editable
+                const fields = ["Job Name", "Job Company", "Job Date Start", "Job Date End", "Job Description", "Job Skills"];
+                fields.forEach(key => {
+                    const cell = row.insertCell();
+                    if (key === "Job Description" || key === "Job Skills") {
+                        const textarea = document.createElement('textarea');
+                        textarea.value = job[key] || ''; // Ensure value is not null/undefined
+                        textarea.className = "w-full p-2 border rounded resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500";
+                        textarea.rows = 3; // Default rows
+                        // Debounce input to prevent too many Firestore writes
+                        let timeout = null;
+                        textarea.addEventListener('input', (e) => {
+                            clearTimeout(timeout);
+                            timeout = setTimeout(() => {
+                                // Update local jobData first
+                                const updatedJob = { ...job, [key]: e.target.value };
+                                jobData[jobData.findIndex(item => item.id === job.id)] = updatedJob;
+                                // Then save to Firestore
+                                updateJobInFirestore(updatedJob.id, { [key]: e.target.value });
+                            }, 500); // Wait 500ms after last input
+                        });
+                        cell.appendChild(textarea);
+                    } else {
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.value = job[key] || ''; // Ensure value is not null/undefined
+                        input.className = "w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500";
+                        let timeout = null;
+                        input.addEventListener('input', (e) => {
+                            clearTimeout(timeout);
+                            timeout = setTimeout(() => {
+                                // Update local jobData first
+                                const updatedJob = { ...job, [key]: e.target.value };
+                                jobData[jobData.findIndex(item => item.id === job.id)] = updatedJob;
+                                // Then save to Firestore
+                                updateJobInFirestore(updatedJob.id, { [key]: e.target.value });
+                            }, 500); // Wait 500ms after last input
+                        });
+                        cell.appendChild(input);
+                    }
+                });
+
+                // Add action buttons
+                const actionsCell = row.insertCell();
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = 'Delete';
+                deleteBtn.className = 'btn btn-danger text-xs';
+                deleteBtn.onclick = () => deleteJobFromFirestore(job.id); // Pass Firestore doc ID
+                actionsCell.appendChild(deleteBtn);
+            });
+        }
+
+        // Firestore functions
+
+        // Get the collection reference for the current user's job data
+        function getJobCollectionRef() {
+            if (!db || !userId) {
+                console.error("Firestore DB or User ID not initialized.");
+                return null;
+            }
+            // Private data storage path
+            return collection(db, `artifacts/${appId}/users/${userId}/jobExperience`);
+        }
+
+        // Add a new job to Firestore
+        async function addJobToFirestore(newJobData) {
+            showLoading();
+            try {
+                const colRef = getJobCollectionRef();
+                if (colRef) {
+                    // addDoc automatically generates a new ID
+                    const docRef = await addDoc(colRef, newJobData);
+                    showMessage('New job added successfully!', 'success');
+                    console.log("Document written with ID: ", docRef.id);
+                }
+            } catch (e) {
+                showMessage('Error adding job: ' + e.message, 'error');
+                console.error("Error adding document: ", e);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Update an existing job in Firestore
+        async function updateJobInFirestore(docId, updates) {
+            showLoading();
+            try {
+                const colRef = getJobCollectionRef();
+                if (colRef) {
+                    await setDoc(doc(colRef, docId), updates, { merge: true }); // merge: true updates specific fields
+                    // showMessage('Job updated successfully!', 'success'); // Too frequent, handled by onSnapshot
+                }
+            } catch (e) {
+                showMessage('Error updating job: ' + e.message, 'error');
+                console.error("Error updating document: ", e);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Delete a job from Firestore
+        async function deleteJobFromFirestore(docId) {
+            showLoading();
+            try {
+                const colRef = getJobCollectionRef();
+                if (colRef) {
+                    await deleteDoc(doc(colRef, docId));
+                    showMessage('Job deleted successfully!', 'success');
+                }
+            } catch (e) {
+                showMessage('Error deleting job: ' + e.message, 'error');
+                console.error("Error deleting document: ", e);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Setup real-time listener for job data
+        function setupFirestoreListener() {
+            const colRef = getJobCollectionRef();
+            if (colRef) {
+                // onSnapshot listens for real-time updates
+                onSnapshot(colRef, (snapshot) => {
+                    const newJobData = [];
+                    snapshot.forEach((doc) => {
+                        newJobData.push({ id: doc.id, ...doc.data() });
+                    });
+                    jobData = newJobData; // Update local data with Firestore data
+                    renderTable(); // Re-render table
+                    showMessage('Job data synchronized with cloud.', 'info');
+                    hideLoading();
+                }, (error) => {
+                    showMessage('Error fetching real-time updates: ' + error.message, 'error');
+                    console.error("Error listening to Firestore: ", error);
+                    hideLoading();
+                });
+            } else {
+                showMessage('Firestore not ready. Please try refreshing.', 'error');
+                hideLoading();
+            }
+        }
+
+        // Initial setup function
+        async function initializeFirebaseAndLoadData() {
+            showLoading();
+            try {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        // User is signed in.
+                        userId = user.uid;
+                        userIdDisplay.textContent = userId;
+                        console.log("User signed in:", userId);
+                        setupFirestoreListener(); // Start listening for data
+                    } else {
+                        // User is signed out. Attempt to sign in.
+                        console.log("User not signed in. Attempting authentication...");
+                        userIdDisplay.textContent = 'Authenticating...';
+                        try {
+                            if (initialAuthToken) {
+                                await signInWithCustomToken(auth, initialAuthToken);
+                            } else {
+                                await signInAnonymously(auth);
+                            }
+                        } catch (error) {
+                            showMessage('Authentication failed: ' + error.message, 'error');
+                            console.error("Firebase authentication error:", error);
+                            userIdDisplay.textContent = 'Failed to authenticate';
+                            hideLoading();
+                        }
+                    }
+                });
+            } catch (error) {
+                showMessage('Error initializing Firebase: ' + error.message, 'error');
+                console.error("Firebase initialization error:", error);
+                hideLoading();
+            }
+        }
+
+        // Event listener for adding a new row
+        document.getElementById('addRowBtn').addEventListener('click', async () => {
+            if (!userId) {
+                showMessage('Please wait for authentication to complete before adding data.', 'info');
+                return;
+            }
+            const newJob = {
+                "Job Name": "",
+                "Job Company": "",
+                "Job Date Start": "",
+                "Job Date End": "",
+                "Job Description": "",
+                "Job Skills": ""
+            };
+            await addJobToFirestore(newJob);
+        });
+
+        // Event listener for the "Force Save Data" button
+        // Note: Individual cell edits save automatically. This button forces a full re-save of current `jobData` if needed.
+        document.getElementById('saveBtn').addEventListener('click', async () => {
+            if (!userId) {
+                showMessage('Please wait for authentication to complete before saving data.', 'info');
+                return;
+            }
+            showLoading();
+            try {
+                const colRef = getJobCollectionRef();
+                if (colRef) {
+                    // First, get all existing docs to clean up any that might have been deleted locally
+                    const existingDocs = await getDocs(query(colRef));
+                    const existingDocIds = existingDocs.docs.map(d => d.id);
+                    const currentJobIds = jobData.map(j => j.id).filter(id => id); // Filter out potential new unsaved jobs
+
+                    // Delete docs that are in Firestore but not in our local jobData
+                    for (const docId of existingDocIds) {
+                        if (!currentJobIds.includes(docId)) {
+                            await deleteDoc(doc(colRef, docId));
+                        }
+                    }
+
+                    // Save/update all current jobData entries
+                    for (const job of jobData) {
+                        if (job.id) { // If it has an ID, update it
+                            await updateJobInFirestore(job.id, job);
+                        } else { // If it's a new entry without an ID, add it
+                            await addJobToFirestore(job);
+                        }
+                    }
+                    showMessage('All data synced with Firestore.', 'success');
+                }
+            } catch (e) {
+                showMessage('Error forcing save: ' + e.message, 'error');
+                console.error("Error forcing save:", e);
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // Initialize Firebase and load data when the page loads
+        window.onload = initializeFirebaseAndLoadData;
+    </script>
+</body>
+</html>
