@@ -113,7 +113,6 @@
 
         <div class="mb-6">
             <button id="addRowBtn" class="btn btn-primary mr-2">Add New Row</button>
-            <!-- Save button is less critical as data updates on input change, but good for explicit save -->
             <button id="saveBtn" class="btn btn-success">Force Save Data</button>
         </div>
 
@@ -140,21 +139,22 @@
 
     <script type="module">
         // Firebase imports
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js"; // Updated SDK version
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
-        // Global variables provided by the Canvas environment
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        // Your web app's Firebase configuration - PASTE YOURS HERE
         const firebaseConfig = {
-    apiKey: "AIzaSyDwkW-MVF3aKqI-F-xGP0XA1uvcsPeanSo",
-    authDomain: "jobdata-c7f32.firebaseapp.com",
-    projectId: "jobdata-c7f32",
-    storageBucket: "jobdata-c7f32.firebasestorage.app",
-    messagingSenderId: "534346265582",
-    appId: "1:534346265582:web:40af2358628940ced154ff"
+            apiKey: "AIzaSyDwkW-MVF3aKqI-F-xGP0XA1uvcsPeanSo",
+            authDomain: "jobdata-c7f32.firebaseapp.com",
+            projectId: "jobdata-c7f32",
+            storageBucket: "jobdata-c7f32.firebasestorage.app",
+            messagingSenderId: "534346265582",
+            appId: "1:534346265582:web:40af2358628940ced154ff"
         };
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // For Heroku, we use the projectId from your Firebase config as the app identifier
+        const APP_ID_FOR_HEROKU = firebaseConfig.projectId; 
 
         // Firebase instances
         let app;
@@ -284,7 +284,11 @@
                             timeout = setTimeout(() => {
                                 // Update local jobData first
                                 const updatedJob = { ...job, [key]: e.target.value };
-                                jobData[jobData.findIndex(item => item.id === job.id)] = updatedJob;
+                                // Ensure the job object being updated in `jobData` array has the `id` field
+                                const jobIndex = jobData.findIndex(item => item.id === job.id);
+                                if (jobIndex !== -1) {
+                                    jobData[jobIndex] = updatedJob;
+                                }
                                 // Then save to Firestore
                                 updateJobInFirestore(updatedJob.id, { [key]: e.target.value });
                             }, 500); // Wait 500ms after last input
@@ -301,7 +305,11 @@
                             timeout = setTimeout(() => {
                                 // Update local jobData first
                                 const updatedJob = { ...job, [key]: e.target.value };
-                                jobData[jobData.findIndex(item => item.id === job.id)] = updatedJob;
+                                // Ensure the job object being updated in `jobData` array has the `id` field
+                                const jobIndex = jobData.findIndex(item => item.id === job.id);
+                                if (jobIndex !== -1) {
+                                    jobData[jobIndex] = updatedJob;
+                                }
                                 // Then save to Firestore
                                 updateJobInFirestore(updatedJob.id, { [key]: e.target.value });
                             }, 500); // Wait 500ms after last input
@@ -328,8 +336,8 @@
                 console.error("Firestore DB or User ID not initialized.");
                 return null;
             }
-            // Private data storage path
-            return collection(db, `artifacts/${appId}/users/${userId}/jobExperience`);
+            // Using firebaseConfig.projectId for the app identifier
+            return collection(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/jobExperience`);
         }
 
         // Add a new job to Firestore
@@ -426,17 +434,13 @@
                         console.log("User signed in:", userId);
                         setupFirestoreListener(); // Start listening for data
                     } else {
-                        // User is signed out. Attempt to sign in.
-                        console.log("User not signed in. Attempting authentication...");
-                        userIdDisplay.textContent = 'Authenticating...';
+                        // User is signed out. For Heroku, default to anonymous sign-in
+                        console.log("User not signed in. Attempting anonymous authentication...");
+                        userIdDisplay.textContent = 'Authenticating anonymously...';
                         try {
-                            if (initialAuthToken) {
-                                await signInWithCustomToken(auth, initialAuthToken);
-                            } else {
-                                await signInAnonymously(auth);
-                            }
+                            await signInAnonymously(auth);
                         } catch (error) {
-                            showMessage('Authentication failed: ' + error.message, 'error');
+                            showMessage('Anonymous authentication failed: ' + error.message, 'error');
                             console.error("Firebase authentication error:", error);
                             userIdDisplay.textContent = 'Failed to authenticate';
                             hideLoading();
@@ -468,7 +472,6 @@
         });
 
         // Event listener for the "Force Save Data" button
-        // Note: Individual cell edits save automatically. This button forces a full re-save of current `jobData` if needed.
         document.getElementById('saveBtn').addEventListener('click', async () => {
             if (!userId) {
                 showMessage('Please wait for authentication to complete before saving data.', 'info');
@@ -478,26 +481,31 @@
             try {
                 const colRef = getJobCollectionRef();
                 if (colRef) {
-                    // First, get all existing docs to clean up any that might have been deleted locally
-                    const existingDocs = await getDocs(query(colRef));
-                    const existingDocIds = existingDocs.docs.map(d => d.id);
-                    const currentJobIds = jobData.map(j => j.id).filter(id => id); // Filter out potential new unsaved jobs
+                    // Fetch existing docs in Firestore to compare and update/add
+                    const existingFirestoreDocsSnapshot = await getDocs(query(colRef));
+                    const existingFirestoreDocsMap = new Map();
+                    existingFirestoreDocsSnapshot.forEach(doc => {
+                        existingFirestoreDocsMap.set(doc.id, doc.data());
+                    });
 
-                    // Delete docs that are in Firestore but not in our local jobData
-                    for (const docId of existingDocIds) {
-                        if (!currentJobIds.includes(docId)) {
-                            await deleteDoc(doc(colRef, docId));
-                        }
-                    }
-
-                    // Save/update all current jobData entries
+                    // Add/Update jobs from local jobData to Firestore
                     for (const job of jobData) {
-                        if (job.id) { // If it has an ID, update it
+                        if (job.id && existingFirestoreDocsMap.has(job.id)) {
+                            // If job has an ID and exists in Firestore, update it
                             await updateJobInFirestore(job.id, job);
-                        } else { // If it's a new entry without an ID, add it
+                            existingFirestoreDocsMap.delete(job.id); // Mark as processed
+                        } else {
+                            // If it's a new job (no ID or not in Firestore), add it
                             await addJobToFirestore(job);
                         }
                     }
+
+                    // Any remaining docs in existingFirestoreDocsMap should be deleted from Firestore
+                    // because they are no longer in our local jobData
+                    for (const docId of existingFirestoreDocsMap.keys()) {
+                        await deleteJobFromFirestore(docId);
+                    }
+
                     showMessage('All data synced with Firestore.', 'success');
                 }
             } catch (e) {
