@@ -299,12 +299,11 @@
             const RELEVANCE_THRESHOLD = 5; // Adjust this value to control how many roles are considered relevant
             let totalMatchedRoles = 0;
 
-            // Sort jobData by score for better output order (most relevant first)
+            // Calculate scores for all jobs
             const scoredJobData = [];
-
             jobData.forEach(job => {
                 let jobScore = 0;
-                const matchedKeywordsForJob = new Set(); // To prevent double-counting scores for the same keyword in a single job
+                const matchedKeywordsForJob = new Set(); 
 
                 const jobSkillsSet = new Set(tokenizeAndFilter(job["Job Skills"] || ''));
                 const jobDescriptionContentSet = new Set(tokenizeAndFilter(job["Job Description"] || ''));
@@ -312,35 +311,42 @@
                 // Phase 1: Score for Weighted Keywords (highest priority)
                 weightedJobDescWords.forEach(keyword => {
                     if (jobSkillsSet.has(keyword)) {
-                        jobScore += 5; // High weight for skills match with weighted keyword
+                        jobScore += 5; 
                         matchedKeywordsForJob.add(keyword);
                     } else if (jobDescriptionContentSet.has(keyword)) {
-                        jobScore += 3; // Medium weight for description match with weighted keyword
+                        jobScore += 3; 
                         matchedKeywordsForJob.add(keyword);
                     }
                 });
 
                 // Phase 2: Score for Normal Keywords (lower priority)
                 normalJobDescWords.forEach(keyword => {
-                    if (!matchedKeywordsForJob.has(keyword)) { // Only score if not already covered by a weighted match
+                    if (!matchedKeywordsForJob.has(keyword)) { 
                         if (jobSkillsSet.has(keyword)) {
-                            jobScore += 2; // Medium weight for skills match with normal keyword
+                            jobScore += 2; 
                             matchedKeywordsForJob.add(keyword);
                         } else if (jobDescriptionContentSet.has(keyword)) {
-                            jobScore += 1; // Low weight for description match with normal keyword
+                            jobScore += 1; 
                             matchedKeywordsForJob.add(keyword);
                         }
                     }
                 });
 
-                // Add to scoredJobData if it meets the relevance threshold
                 if (jobScore >= RELEVANCE_THRESHOLD) {
                     scoredJobData.push({ job: job, score: jobScore });
                 }
             });
 
-            // Sort jobs by their calculated score in descending order
-            scoredJobData.sort((a, b) => b.score - a.score);
+            // Sort jobs: Primary by Job Date Start (descending), Secondary by Score (descending)
+            scoredJobData.sort((a, b) => {
+                const dateA = new Date(a.job["Job Date Start"]);
+                const dateB = new Date(b.job["Job Date Start"]);
+
+                if (dateB - dateA !== 0) {
+                    return dateB - dateA; // Sort by date descending
+                }
+                return b.score - a.score; // If dates are same, sort by score descending
+            });
 
             if (scoredJobData.length > 0) {
                 let finalOutput = `**Tailored Relevant Experience:**\n\n`;
@@ -351,7 +357,7 @@
                     finalOutput += `**${job["Job Name"]}** at ${job["Job Company"]} (${job["Job Date Start"]} - ${job["Job Date End"]})\n`;
                     
                     const sentences = (job["Job Description"] || '').split('. ').map(s => s.trim()).filter(s => s.length > 0);
-                    let relevantBulletPoints = new Set(); // Use a Set to avoid duplicate bullet points
+                    let relevantBulletPoints = new Set(); 
 
                     // Prioritize sentences containing weighted keywords
                     weightedJobDescWords.forEach(weightedKeyword => {
@@ -363,7 +369,7 @@
                     });
 
                     // Add other relevant sentences if not enough matches from weighted keywords
-                    if (relevantBulletPoints.size < 3) { // Example: try to get at least 3 bullet points
+                    if (relevantBulletPoints.size < 3) { 
                         normalJobDescWords.forEach(normalKeyword => {
                             sentences.forEach(sentence => {
                                 if (relevantBulletPoints.size < 5 && sentence.toLowerCase().includes(normalKeyword) && !relevantBulletPoints.has(`- ${sentence}.`)) {
@@ -383,18 +389,15 @@
 
                     relevantBulletPoints.forEach(bp => finalOutput += `${bp}\n`);
 
-                    // --- START OF SKILLS REVISION ---
                     if (job["Job Skills"]) {
                         const jobSkillsArray = job["Job Skills"].split(',').map(s => s.trim()).filter(s => s.length > 0);
                         const matchedSkills = new Set();
 
                         jobSkillsArray.forEach(skill => {
-                            const tokenizedSkill = tokenizeAndFilter(skill).join(' '); // Tokenize the individual skill for matching
-                            // Check if the skill (or any part of its tokenized form) is in the job description's keywords
+                            const tokenizedSkill = tokenizeAndFilter(skill).join(' '); 
                             if (weightedJobDescWords.has(tokenizedSkill) || normalJobDescWords.has(tokenizedSkill)) {
                                 matchedSkills.add(skill);
                             } else {
-                                // Also check if any part of the skill matches a job description keyword (e.g., "project management" skill vs "project" keyword)
                                 const skillTokens = tokenizeAndFilter(skill);
                                 skillTokens.forEach(st => {
                                     if (weightedJobDescWords.has(st) || normalJobDescWords.has(st)) {
@@ -408,8 +411,7 @@
                             finalOutput += `- Relevant Skills: ${Array.from(matchedSkills).join(', ')}\n`;
                         }
                     }
-                    // --- END OF SKILLS REVISION ---
-                    finalOutput += '\n'; // Add a blank line for separation between roles
+                    finalOutput += '\n'; 
                 });
                 
                 finalOutput = `**Tailored Relevant Experience (Matching ${totalMatchedRoles} roles):**\n\n` + finalOutput;
