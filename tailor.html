@@ -383,9 +383,32 @@
 
                     relevantBulletPoints.forEach(bp => finalOutput += `${bp}\n`);
 
+                    // --- START OF SKILLS REVISION ---
                     if (job["Job Skills"]) {
-                        finalOutput += `- Key Skills: ${job["Job Skills"]}\n`;
+                        const jobSkillsArray = job["Job Skills"].split(',').map(s => s.trim()).filter(s => s.length > 0);
+                        const matchedSkills = new Set();
+
+                        jobSkillsArray.forEach(skill => {
+                            const tokenizedSkill = tokenizeAndFilter(skill).join(' '); // Tokenize the individual skill for matching
+                            // Check if the skill (or any part of its tokenized form) is in the job description's keywords
+                            if (weightedJobDescWords.has(tokenizedSkill) || normalJobDescWords.has(tokenizedSkill)) {
+                                matchedSkills.add(skill);
+                            } else {
+                                // Also check if any part of the skill matches a job description keyword (e.g., "project management" skill vs "project" keyword)
+                                const skillTokens = tokenizeAndFilter(skill);
+                                skillTokens.forEach(st => {
+                                    if (weightedJobDescWords.has(st) || normalJobDescWords.has(st)) {
+                                        matchedSkills.add(skill);
+                                    }
+                                });
+                            }
+                        });
+
+                        if (matchedSkills.size > 0) {
+                            finalOutput += `- Relevant Skills: ${Array.from(matchedSkills).join(', ')}\n`;
+                        }
                     }
+                    // --- END OF SKILLS REVISION ---
                     finalOutput += '\n'; // Add a blank line for separation between roles
                 });
                 
