@@ -198,18 +198,195 @@
                 console.error("Firestore DB or User ID not initialized.");
                 return null;
             }
-            // New collection for cover letters
             return collection(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/coverLetters`);
         }
 
         function setupFirestoreListener() {
             const colRef = getCoverLettersCollectionRef();
             if (colRef) {
-                // onSnapshot listens for real-time updates and sorts by timestamp descending
                 onSnapshot(query(colRef), (snapshot) => {
                     const coverLetters = [];
                     snapshot.forEach((doc) => {
                         coverLetters.push({ id: doc.id, ...doc.data() });
                     });
 
-                    // Sort by timestamp
+                    // Sort by timestamp if available, latest first
+                    coverLetters.sort((a, b) => {
+                        const dateA = a.timestamp ? a.timestamp.toDate() : new Date(0);
+                        const dateB = b.timestamp ? b.timestamp.toDate() : new Date(0);
+                        return dateB - dateA;
+                    });
+                    
+                    renderCoverLetters(coverLetters);
+                    showMessage(`Loaded ${coverLetters.length} cover letters from Firestore.`, 'info');
+                    hideLoading();
+                }, (error) => {
+                    showMessage('Error fetching cover letters: ' + error.message, 'error');
+                    console.error("Error listening to Firestore: ", error);
+                    hideLoading();
+                });
+            } else {
+                showMessage('Firestore not ready. Please try refreshing.', 'error');
+                hideLoading();
+            }
+        }
+
+        async function initializeFirebaseAndLoadData() {
+            showLoading();
+            try {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                // Listen for authentication state changes
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        // User is signed in.
+                        userId = user.uid;
+                        userIdDisplay.textContent = userId;
+                        console.log("User signed in:", userId);
+                        setupFirestoreListener(); // Start listening for data
+                    } else {
+                        // User is signed out. Attempt to sign in anonymously.
+                        console.log("User not signed in. Attempting anonymous authentication...");
+                        userIdDisplay.textContent = 'Authenticating anonymously...';
+                        try {
+                            const anonymousUserCredential = await signInAnonymously(auth);
+                            userId = anonymousUserCredential.user.uid;
+                            userIdDisplay.textContent = userId;
+                            console.log("Signed in anonymously:", userId);
+                            setupFirestoreListener(); // Start listening for data
+                        } catch (error) {
+                            showMessage('Anonymous authentication failed: ' + error.message, 'error');
+                            console.error("Firebase authentication error:", error);
+                            userIdDisplay.textContent = 'Authentication Failed'; // Update UI on failure
+                            hideLoading(); // Hide loading on failure too
+                        }
+                    }
+                     // Ensure loading is hidden even if onAuthStateChanged takes time or fails partially
+                     // This might cause a slight flicker if setupFirestoreListener is slow, but ensures it doesn't hang.
+                     // A more robust solution might involve a dedicated `isAuthReady` state.
+                    if (userId) { // Only hide loading here if we successfully got a userId to start data listener
+                        hideLoading();
+                    }
+                });
+            } catch (error) {
+                showMessage('Error initializing Firebase: ' + error.message, 'error');
+                console.error("Firebase initialization error:", error);
+                hideLoading();
+            }
+        }
+
+        // --- Cover Letter Management Functions ---
+
+        async function saveCoverLetter() {
+            if (!userId) {
+                showMessage('Please wait for authentication to complete before saving.', 'info');
+                return;
+            }
+
+            const title = coverLetterTitleInput.value.trim();
+            const content = coverLetterContentInput.value.trim();
+
+            if (!title || !content) {
+                showMessage('Please provide both a title and content for the cover letter.', 'error');
+                return;
+            }
+
+            showLoading();
+            try {
+                const colRef = getCoverLettersCollectionRef();
+                if (colRef) {
+                    await addDoc(colRef, {
+                        title: title,
+                        content: content,
+                        timestamp: serverTimestamp() 
+                    });
+                    showMessage('Cover letter saved successfully!', 'success');
+                    coverLetterTitleInput.value = '';
+                    coverLetterContentInput.value = '';
+                }
+            } catch (e) {
+                showMessage('Error saving cover letter: ' + e.message, 'error');
+                console.error("Error adding document: ", e);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function deleteCoverLetter(docId) {
+            if (!userId) {
+                showMessage('Authentication not ready to delete.', 'info');
+                return;
+            }
+
+            showLoading();
+            try {
+                const colRef = getCoverLettersCollectionRef();
+                if (colRef) {
+                    await deleteDoc(doc(colRef, docId));
+                    showMessage('Cover letter deleted successfully!', 'success');
+                }
+            } catch (e) {
+                showMessage('Error deleting cover letter: ' + e.message, 'error');
+                console.error("Error deleting document: ", e);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function renderCoverLetters(letters) {
+            savedCoverLettersList.innerHTML = '';
+            if (letters.length === 0) {
+                savedCoverLettersList.innerHTML = '<p class="text-gray-500 text-center py-4">No cover letters saved yet. Start writing above!</p>';
+                return;
+            }
+
+            letters.forEach(letter => {
+                const letterDiv = document.createElement('div');
+                letterDiv.className = 'cover-letter-item';
+                letterDiv.dataset.docId = letter.id;
+
+                const headerDiv = document.createElement('div');
+                headerDiv.className = 'cover-letter-header';
+
+                const titleSpan = document.createElement('span');
+                titleSpan.className = 'font-semibold text-lg text-gray-800';
+                titleSpan.textContent = letter.title;
+                headerDiv.appendChild(titleSpan);
+
+                const actionsDiv = document.createElement('div');
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = 'Delete';
+                deleteBtn.className = 'btn btn-danger text-xs';
+                deleteBtn.onclick = () => deleteCoverLetter(letter.id);
+                actionsDiv.appendChild(deleteBtn);
+                headerDiv.appendChild(actionsDiv);
+
+                letterDiv.appendChild(headerDiv);
+
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'cover-letter-content';
+                contentDiv.textContent = letter.content;
+                letterDiv.appendChild(contentDiv);
+
+                const timestampSpan = document.createElement('p');
+                timestampSpan.className = 'text-xs text-gray-400 mt-2 text-right';
+                // Convert Firestore Timestamp to Date object for display
+                const date = letter.timestamp && letter.timestamp.toDate ? letter.timestamp.toDate() : new Date();
+                timestampSpan.textContent = `Saved: ${date.toLocaleString()}`;
+                letterDiv.appendChild(timestampSpan);
+
+
+                savedCoverLettersList.appendChild(letterDiv);
+            });
+        }
+
+        // Event Listeners
+        saveCoverLetterBtn.addEventListener('click', saveCoverLetter);
+
+        // Initialize Firebase and load data when the page loads
+        window.onload = initializeFirebaseAndLoadData;
+    </script>
+</body>
+</html>
