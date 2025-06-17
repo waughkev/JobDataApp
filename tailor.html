@@ -104,7 +104,7 @@
         </div>
 
         <h2 class="text-xl font-semibold text-gray-700 mb-3">Job Description:</h2>
-        <textarea id="jobDescriptionInput" placeholder="Paste the full job description here..."></textarea>
+        <textarea id="jobDescriptionInput" placeholder="Paste the full job description here. Use **double asterisks** for important keywords (e.g., **project management**, **Agile**)."></textarea>
 
         <button id="tailorResumeBtn" class="btn btn-primary mb-6">Tailor Resume</button>
 
@@ -146,7 +146,7 @@
         const tailoredResumeOutput = document.getElementById('tailoredResumeOutput');
         const tailorResumeBtn = document.getElementById('tailorResumeBtn');
 
-        // --- Utility Functions (Copied from previous file for consistency) ---
+        // --- Utility Functions ---
         function showLoading() {
             loadingOverlay.classList.remove('hidden');
         }
@@ -254,7 +254,10 @@
                 "over", "past", "round", "since", "through", "to", "under", "up", "upon", "within", "without",
                 "via", "also", "very", "much", "more", "most", "less", "least", "just", "only", "even", "indeed",
                 "actually", "really", "so", "too", "well", "away", "back", "down", "forward", "here", "in", "off",
-                "on", "out", "over", "still", "then", "there", "under", "up", "when", "where", "while", "why", "yet"
+                "on", "out", "over", "still", "then", "there", "under", "up", "when", "where", "while", "why", "yet",
+                // Add more common resume words that might not be useful for matching
+                "experience", "responsibilities", "skills", "ability", "proficient", "strong", "proven", "demonstrated",
+                "manage", "lead", "develop", "implement", "create", "drive", "optimize", "support", "collaborate"
             ]);
             return text.toLowerCase()
                        .replace(/[^a-z0-9\s]/g, '') // Remove punctuation except spaces
@@ -264,9 +267,9 @@
 
         function tailorResume() {
             showLoading();
-            const jobDescription = jobDescriptionInput.value.trim();
+            const jobDescriptionRaw = jobDescriptionInput.value.trim();
 
-            if (!jobDescription) {
+            if (!jobDescriptionRaw) {
                 showMessage("Please paste a job description to tailor your resume.", "info");
                 hideLoading();
                 return;
@@ -278,63 +281,119 @@
                 return;
             }
 
-            const jobDescWords = tokenizeAndFilter(jobDescription);
+            // Extract weighted keywords (e.g., from **word**)
+            const weightedRegex = /\*\*([a-zA-Z0-9\s]+?)\*\*/g;
+            let match;
+            const rawWeightedKeywords = [];
+            let cleanJobDescription = jobDescriptionRaw;
+
+            while ((match = weightedRegex.exec(jobDescriptionRaw)) !== null) {
+                rawWeightedKeywords.push(match[1]); // Capture the word inside **
+                cleanJobDescription = cleanJobDescription.replace(match[0], match[1]); // Remove asterisks from description for normal tokenization
+            }
+
+            const weightedJobDescWords = new Set(tokenizeAndFilter(rawWeightedKeywords.join(' ')));
+            const normalJobDescWords = new Set(tokenizeAndFilter(cleanJobDescription));
+            
             const tailoredContent = [];
-            let matchedRoles = 0;
+            const RELEVANCE_THRESHOLD = 5; // Adjust this value to control how many roles are considered relevant
+            let totalMatchedRoles = 0;
+
+            // Sort jobData by score for better output order (most relevant first)
+            const scoredJobData = [];
 
             jobData.forEach(job => {
-                const jobSkills = tokenizeAndFilter(job["Job Skills"] || '');
-                const jobDescContent = tokenizeAndFilter(job["Job Description"] || '');
-                
-                // Combine words for matching
-                const jobExperienceWords = new Set([...jobSkills, ...jobDescContent]);
-                
-                let score = 0;
-                jobDescWords.forEach(descWord => {
-                    if (jobExperienceWords.has(descWord)) {
-                        score++;
+                let jobScore = 0;
+                const matchedKeywordsForJob = new Set(); // To prevent double-counting scores for the same keyword in a single job
+
+                const jobSkillsSet = new Set(tokenizeAndFilter(job["Job Skills"] || ''));
+                const jobDescriptionContentSet = new Set(tokenizeAndFilter(job["Job Description"] || ''));
+
+                // Phase 1: Score for Weighted Keywords (highest priority)
+                weightedJobDescWords.forEach(keyword => {
+                    if (jobSkillsSet.has(keyword)) {
+                        jobScore += 5; // High weight for skills match with weighted keyword
+                        matchedKeywordsForJob.add(keyword);
+                    } else if (jobDescriptionContentSet.has(keyword)) {
+                        jobScore += 3; // Medium weight for description match with weighted keyword
+                        matchedKeywordsForJob.add(keyword);
                     }
                 });
 
-                // Simple threshold for relevance
-                if (score > 2 || (jobDescWords.some(word => (job["Job Name"] || '').toLowerCase().includes(word)) || jobDescWords.some(word => (job["Job Company"] || '').toLowerCase().includes(word)))) {
-                    matchedRoles++;
-                    tailoredContent.push(`**${job["Job Name"]}** at ${job["Job Company"]} (${job["Job Date Start"]} - ${job["Job Date End"]})`);
-                    
-                    // Add relevant bullet points from the job description and skills
-                    // For now, just add the full description and skills, we can refine this later.
-                    if (job["Job Description"]) {
-                        // Attempt to extract relevant sentences or phrases from job description
-                        const sentences = job["Job Description"].split('. ').map(s => s.trim()).filter(s => s.length > 0);
-                        let relevantSentences = [];
-                        sentences.forEach(sentence => {
-                            if (jobDescWords.some(word => sentence.toLowerCase().includes(word))) {
-                                relevantSentences.push(`- ${sentence}.`);
-                            }
-                        });
-                        // If no specific sentences match, add the full description or a summary
-                        if (relevantSentences.length === 0 && job["Job Description"].length > 50) {
-                            relevantSentences.push(`- ${job["Job Description"].substring(0, 150)}... (Relevant experience summary)`);
-                        } else if (relevantSentences.length === 0) {
-                            relevantSentences.push(`- ${job["Job Description"]}`);
+                // Phase 2: Score for Normal Keywords (lower priority)
+                normalJobDescWords.forEach(keyword => {
+                    if (!matchedKeywordsForJob.has(keyword)) { // Only score if not already covered by a weighted match
+                        if (jobSkillsSet.has(keyword)) {
+                            jobScore += 2; // Medium weight for skills match with normal keyword
+                            matchedKeywordsForJob.add(keyword);
+                        } else if (jobDescriptionContentSet.has(keyword)) {
+                            jobScore += 1; // Low weight for description match with normal keyword
+                            matchedKeywordsForJob.add(keyword);
                         }
-                        tailoredContent.push(...relevantSentences);
                     }
+                });
 
-                    if (job["Job Skills"]) {
-                        tailoredContent.push(`- Key Skills: ${job["Job Skills"]}`);
-                    }
-                    tailoredContent.push(''); // Add a blank line for separation
+                // Add to scoredJobData if it meets the relevance threshold
+                if (jobScore >= RELEVANCE_THRESHOLD) {
+                    scoredJobData.push({ job: job, score: jobScore });
                 }
             });
 
-            if (tailoredContent.length > 0) {
-                let finalOutput = `**Tailored Relevant Experience (Matching ${matchedRoles} roles):**\n\n`;
-                finalOutput += tailoredContent.join('\n');
+            // Sort jobs by their calculated score in descending order
+            scoredJobData.sort((a, b) => b.score - a.score);
+
+            if (scoredJobData.length > 0) {
+                let finalOutput = `**Tailored Relevant Experience:**\n\n`;
+                
+                scoredJobData.forEach(item => {
+                    const job = item.job;
+                    totalMatchedRoles++;
+                    finalOutput += `**${job["Job Name"]}** at ${job["Job Company"]} (${job["Job Date Start"]} - ${job["Job Date End"]})\n`;
+                    
+                    const sentences = (job["Job Description"] || '').split('. ').map(s => s.trim()).filter(s => s.length > 0);
+                    let relevantBulletPoints = new Set(); // Use a Set to avoid duplicate bullet points
+
+                    // Prioritize sentences containing weighted keywords
+                    weightedJobDescWords.forEach(weightedKeyword => {
+                        sentences.forEach(sentence => {
+                            if (sentence.toLowerCase().includes(weightedKeyword)) {
+                                relevantBulletPoints.add(`- ${sentence}.`);
+                            }
+                        });
+                    });
+
+                    // Add other relevant sentences if not enough matches from weighted keywords
+                    if (relevantBulletPoints.size < 3) { // Example: try to get at least 3 bullet points
+                        normalJobDescWords.forEach(normalKeyword => {
+                            sentences.forEach(sentence => {
+                                if (relevantBulletPoints.size < 5 && sentence.toLowerCase().includes(normalKeyword) && !relevantBulletPoints.has(`- ${sentence}.`)) {
+                                    relevantBulletPoints.add(`- ${sentence}.`);
+                                }
+                            });
+                        });
+                    }
+
+                    // If still very few, take some generic sentences
+                    if (relevantBulletPoints.size === 0 && sentences.length > 0) {
+                        relevantBulletPoints.add(`- ${sentences[0]}. (General relevance)`);
+                        if (sentences.length > 1) {
+                            relevantBulletPoints.add(`- ${sentences[1]}.`);
+                        }
+                    }
+
+                    relevantBulletPoints.forEach(bp => finalOutput += `${bp}\n`);
+
+                    if (job["Job Skills"]) {
+                        finalOutput += `- Key Skills: ${job["Job Skills"]}\n`;
+                    }
+                    finalOutput += '\n'; // Add a blank line for separation between roles
+                });
+                
+                finalOutput = `**Tailored Relevant Experience (Matching ${totalMatchedRoles} roles):**\n\n` + finalOutput;
                 tailoredResumeOutput.textContent = finalOutput;
                 showMessage("Resume tailored successfully!", "success");
             } else {
-                tailoredResumeOutput.textContent = "No direct matches found based on the job description. Please refine your job descriptions and skills in the editor, or try a different job description.";
+                tailoredResumeOutput.textContent = "No relevant job experiences found based on the job description and your defined keywords. Please try: \n1. Refining your job descriptions and skills in the editor. \n2. Using more specific keywords in the job description. \n3. Adjusting the relevance threshold if this is too strict.";
                 showMessage("No relevant experience found.", "info");
             }
             hideLoading();
