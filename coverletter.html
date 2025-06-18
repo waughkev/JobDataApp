@@ -114,9 +114,9 @@
 
     <div class="w-full bg-gray-800 p-4 shadow-md">
         <nav class="container mx-auto flex justify-center space-x-8">
-            <a href="index.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Job Editor</a>
-            <a href="tailor.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Resume Tailor</a>
-            <a href="cover_letters.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Cover Letters</a>
+            <a href="index.html" class="text-black hover:text-indigo-300 font-medium transition duration-300">Job Editor</a>
+            <a href="tailor.html" class="text-black hover:text-indigo-300 font-medium transition duration-300">Resume Tailor</a>
+            <a href="coverletter.html" class="text-black hover:text-indigo-300 font-medium transition duration-300">Cover Letters</a>
         </nav>
     </div>
 
@@ -184,8 +184,8 @@
         function showMessage(message, type = 'info') {
             const messageBox = document.getElementById('message-box');
             const messageContent = document.getElementById('message-content');
-            messageBox.classList.remove('hidden', 'bg-blue-100', 'bg-green-100', 'bg-red-100', 'border-blue-400', 'border-green-400', 'border-red-400', 'text-blue-700', 'text-green-700', 'text-red-700');
             messageContent.textContent = message;
+            messageBox.classList.remove('hidden', 'bg-blue-100', 'bg-green-100', 'bg-red-100', 'border-blue-400', 'border-green-400', 'border-red-400', 'text-blue-700', 'text-green-700', 'text-red-700');
 
             if (type === 'success') {
                 messageBox.classList.add('bg-green-100', 'border-green-400', 'text-green-700');
@@ -253,7 +253,7 @@
                         userId = user.uid;
                         userIdDisplay.textContent = userId;
                         console.log("User signed in:", userId);
-                        setupFirestoreListener(); // Start listening for data
+                        setupFirestoreListener(); 
                     } else {
                         // User is signed out. Attempt to sign in anonymously.
                         console.log("User not signed in. Attempting anonymous authentication...");
@@ -263,7 +263,7 @@
                             userId = anonymousUserCredential.user.uid;
                             userIdDisplay.textContent = userId;
                             console.log("Signed in anonymously:", userId);
-                            setupFirestoreListener(); // Start listening for data
+                            setupFirestoreListener(); 
                         } catch (error) {
                             showMessage('Anonymous authentication failed: ' + error.message, 'error');
                             console.error("Firebase authentication error:", error);
