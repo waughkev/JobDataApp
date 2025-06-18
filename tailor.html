@@ -94,6 +94,14 @@
         <div class="spinner"></div>
     </div>
 
+    <div class="w-full bg-gray-800 p-4 shadow-md">
+        <nav class="container mx-auto flex justify-center space-x-8">
+            <a href="index.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Job Editor</a>
+            <a href="tailor.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Resume Tailor</a>
+            <a href="cover_letters.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Cover Letters</a>
+        </nav>
+    </div>
+
     <div class="container">
         <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Tailor Your Resume</h1>
 
@@ -120,7 +128,7 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
-        // Your web app's Firebase configuration - MUST BE THE SAME AS YOUR EDITOR PAGE
+        // Your web app's Firebase configuration - MUST BE THE SAME AS YOUR OTHER PAGES
         const firebaseConfig = {
             apiKey: "AIzaSyDwkW-MVF3aKqI-F-xGP0XA1uvcsPeanSo",
             authDomain: "jobdata-c7f32.firebaseapp.com",
@@ -130,7 +138,6 @@
             appId: "1:534346265582:web:40af2358628940ced154ff"
         };
 
-        // For Heroku, use the projectId from your Firebase config as the app identifier
         const APP_ID_FOR_HEROKU = firebaseConfig.projectId; 
 
         // Firebase instances
@@ -138,7 +145,7 @@
         let db;
         let auth;
         let userId = null; 
-        let jobData = []; // Will store job experiences from Firestore
+        let jobData = []; 
 
         const loadingOverlay = document.getElementById('loading');
         const userIdDisplay = document.getElementById('userIdDisplay');
@@ -191,7 +198,7 @@
                     snapshot.forEach((doc) => {
                         newJobData.push({ id: doc.id, ...doc.data() });
                     });
-                    jobData = newJobData; // Update local jobData
+                    jobData = newJobData; 
                     showMessage(`Loaded ${jobData.length} job experiences from Firestore.`, 'info');
                     hideLoading();
                 }, (error) => {
@@ -222,13 +229,20 @@
                         console.log("User not signed in. Attempting anonymous authentication...");
                         userIdDisplay.textContent = 'Authenticating anonymously...';
                         try {
-                            await signInAnonymously(auth);
+                            const anonymousUserCredential = await signInAnonymously(auth);
+                            userId = anonymousUserCredential.user.uid;
+                            userIdDisplay.textContent = userId;
+                            console.log("Signed in anonymously:", userId);
+                            setupFirestoreListener(); 
                         } catch (error) {
-                            showMessage('Authentication failed: ' + error.message, 'error');
+                            showMessage('Anonymous authentication failed: ' + error.message, 'error');
                             console.error("Firebase authentication error:", error);
-                            userIdDisplay.textContent = 'Failed to authenticate';
-                            hideLoading();
+                            userIdDisplay.textContent = 'Authentication Failed'; 
+                            hideLoading(); 
                         }
+                    }
+                    if (userId) { 
+                        hideLoading();
                     }
                 });
             } catch (error) {
@@ -239,8 +253,6 @@
         }
 
         // --- Resume Tailoring Logic ---
-
-        // Simple tokenizer to break text into words and filter common ones
         function tokenizeAndFilter(text) {
             const stopwords = new Set([
                 "a", "an", "and", "are", "as", "at", "be", "but", "by", "for", "if", "in", "into", "is", "it",
@@ -255,14 +267,13 @@
                 "via", "also", "very", "much", "more", "most", "less", "least", "just", "only", "even", "indeed",
                 "actually", "really", "so", "too", "well", "away", "back", "down", "forward", "here", "in", "off",
                 "on", "out", "over", "still", "then", "there", "under", "up", "when", "where", "while", "why", "yet",
-                // Add more common resume words that might not be useful for matching
                 "experience", "responsibilities", "skills", "ability", "proficient", "strong", "proven", "demonstrated",
                 "manage", "lead", "develop", "implement", "create", "drive", "optimize", "support", "collaborate"
             ]);
             return text.toLowerCase()
-                       .replace(/[^a-z0-9\s]/g, '') // Remove punctuation except spaces
-                       .split(/\s+/) // Split by whitespace
-                       .filter(word => word.length > 2 && !stopwords.has(word)); // Filter short words and stopwords
+                       .replace(/[^a-z0-9\s]/g, '') 
+                       .split(/\s+/) 
+                       .filter(word => word.length > 2 && !stopwords.has(word)); 
         }
 
         function tailorResume() {
@@ -281,26 +292,25 @@
                 return;
             }
 
-            // Extract weighted keywords (e.g., from **word**)
             const weightedRegex = /\*\*([a-zA-Z0-9\s]+?)\*\*/g;
             let match;
             const rawWeightedKeywords = [];
             let cleanJobDescription = jobDescriptionRaw;
 
             while ((match = weightedRegex.exec(jobDescriptionRaw)) !== null) {
-                rawWeightedKeywords.push(match[1]); // Capture the word inside **
-                cleanJobDescription = cleanJobDescription.replace(match[0], match[1]); // Remove asterisks from description for normal tokenization
+                rawWeightedKeywords.push(match[1]); 
+                cleanJobDescription = cleanJobDescription.replace(match[0], match[1]); 
             }
 
             const weightedJobDescWords = new Set(tokenizeAndFilter(rawWeightedKeywords.join(' ')));
             const normalJobDescWords = new Set(tokenizeAndFilter(cleanJobDescription));
             
             const tailoredContent = [];
-            const RELEVANCE_THRESHOLD = 5; // Adjust this value to control how many roles are considered relevant
+            const RELEVANCE_THRESHOLD = 5; 
             let totalMatchedRoles = 0;
 
-            // Calculate scores for all jobs
             const scoredJobData = [];
+
             jobData.forEach(job => {
                 let jobScore = 0;
                 const matchedKeywordsForJob = new Set(); 
@@ -308,7 +318,6 @@
                 const jobSkillsSet = new Set(tokenizeAndFilter(job["Job Skills"] || ''));
                 const jobDescriptionContentSet = new Set(tokenizeAndFilter(job["Job Description"] || ''));
 
-                // Phase 1: Score for Weighted Keywords (highest priority)
                 weightedJobDescWords.forEach(keyword => {
                     if (jobSkillsSet.has(keyword)) {
                         jobScore += 5; 
@@ -319,7 +328,6 @@
                     }
                 });
 
-                // Phase 2: Score for Normal Keywords (lower priority)
                 normalJobDescWords.forEach(keyword => {
                     if (!matchedKeywordsForJob.has(keyword)) { 
                         if (jobSkillsSet.has(keyword)) {
@@ -337,15 +345,14 @@
                 }
             });
 
-            // Sort jobs: Primary by Job Date Start (descending), Secondary by Score (descending)
             scoredJobData.sort((a, b) => {
                 const dateA = new Date(a.job["Job Date Start"]);
                 const dateB = new Date(b.job["Job Date Start"]);
 
                 if (dateB - dateA !== 0) {
-                    return dateB - dateA; // Sort by date descending
+                    return dateB - dateA; 
                 }
-                return b.score - a.score; // If dates are same, sort by score descending
+                return b.score - a.score; 
             });
 
             if (scoredJobData.length > 0) {
@@ -359,7 +366,6 @@
                     const sentences = (job["Job Description"] || '').split('. ').map(s => s.trim()).filter(s => s.length > 0);
                     let relevantBulletPoints = new Set(); 
 
-                    // Prioritize sentences containing weighted keywords
                     weightedJobDescWords.forEach(weightedKeyword => {
                         sentences.forEach(sentence => {
                             if (sentence.toLowerCase().includes(weightedKeyword)) {
@@ -368,7 +374,6 @@
                         });
                     });
 
-                    // Add other relevant sentences if not enough matches from weighted keywords
                     if (relevantBulletPoints.size < 3) { 
                         normalJobDescWords.forEach(normalKeyword => {
                             sentences.forEach(sentence => {
@@ -379,7 +384,6 @@
                         });
                     }
 
-                    // If still very few, take some generic sentences
                     if (relevantBulletPoints.size === 0 && sentences.length > 0) {
                         relevantBulletPoints.add(`- ${sentences[0]}. (General relevance)`);
                         if (sentences.length > 1) {
@@ -424,10 +428,8 @@
             hideLoading();
         }
 
-        // Event listener for the Tailor Resume button
         tailorResumeBtn.addEventListener('click', tailorResume);
 
-        // Initialize Firebase and load data when the page loads
         window.onload = initializeFirebaseAndLoadData;
     </script>
 </body>

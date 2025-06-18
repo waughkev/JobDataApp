@@ -112,6 +112,14 @@
         <div class="spinner"></div>
     </div>
 
+    <div class="w-full bg-gray-800 p-4 shadow-md">
+        <nav class="container mx-auto flex justify-center space-x-8">
+            <a href="index.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Job Editor</a>
+            <a href="tailor.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Resume Tailor</a>
+            <a href="cover_letters.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Cover Letters</a>
+        </nav>
+    </div>
+
     <div class="container">
         <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Cover Letter Manager</h1>
 
@@ -176,8 +184,8 @@
         function showMessage(message, type = 'info') {
             const messageBox = document.getElementById('message-box');
             const messageContent = document.getElementById('message-content');
-            messageContent.textContent = message;
             messageBox.classList.remove('hidden', 'bg-blue-100', 'bg-green-100', 'bg-red-100', 'border-blue-400', 'border-green-400', 'border-red-400', 'text-blue-700', 'text-green-700', 'text-red-700');
+            messageContent.textContent = message;
 
             if (type === 'success') {
                 messageBox.classList.add('bg-green-100', 'border-green-400', 'text-green-700');
@@ -259,14 +267,11 @@
                         } catch (error) {
                             showMessage('Anonymous authentication failed: ' + error.message, 'error');
                             console.error("Firebase authentication error:", error);
-                            userIdDisplay.textContent = 'Authentication Failed'; // Update UI on failure
-                            hideLoading(); // Hide loading on failure too
+                            userIdDisplay.textContent = 'Authentication Failed'; 
+                            hideLoading(); 
                         }
                     }
-                     // Ensure loading is hidden even if onAuthStateChanged takes time or fails partially
-                     // This might cause a slight flicker if setupFirestoreListener is slow, but ensures it doesn't hang.
-                     // A more robust solution might involve a dedicated `isAuthReady` state.
-                    if (userId) { // Only hide loading here if we successfully got a userId to start data listener
+                    if (userId) { 
                         hideLoading();
                     }
                 });
@@ -372,7 +377,6 @@
 
                 const timestampSpan = document.createElement('p');
                 timestampSpan.className = 'text-xs text-gray-400 mt-2 text-right';
-                // Convert Firestore Timestamp to Date object for display
                 const date = letter.timestamp && letter.timestamp.toDate ? letter.timestamp.toDate() : new Date();
                 timestampSpan.textContent = `Saved: ${date.toLocaleString()}`;
                 letterDiv.appendChild(timestampSpan);

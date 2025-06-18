@@ -99,6 +99,14 @@
         <div class="spinner"></div>
     </div>
 
+    <div class="w-full bg-gray-800 p-4 shadow-md">
+        <nav class="container mx-auto flex justify-center space-x-8">
+            <a href="index.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Job Editor</a>
+            <a href="tailor.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Resume Tailor</a>
+            <a href="cover_letters.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Cover Letters</a>
+        </nav>
+    </div>
+
     <div class="container">
         <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Job Experience Editor</h1>
 
@@ -139,11 +147,11 @@
 
     <script type="module">
         // Firebase imports
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js"; // Updated SDK version
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
-        // Your web app's Firebase configuration - PASTE YOURS HERE
+        // Your web app's Firebase configuration - MUST BE THE SAME AS YOUR OTHER PAGES
         const firebaseConfig = {
             apiKey: "AIzaSyDwkW-MVF3aKqI-F-xGP0XA1uvcsPeanSo",
             authDomain: "jobdata-c7f32.firebaseapp.com",
@@ -153,19 +161,16 @@
             appId: "1:534346265582:web:40af2358628940ced154ff"
         };
 
-        // For Heroku, we use the projectId from your Firebase config as the app identifier
         const APP_ID_FOR_HEROKU = firebaseConfig.projectId; 
 
         // Firebase instances
         let app;
         let db;
         let auth;
-        let userId = null; // Will store the authenticated user ID
+        let userId = null; 
 
-        // Array to store job data locally, synced with Firestore
         let jobData = [];
 
-        // Pre-fill with data from the resume (used if no data in Firestore)
         const resumeData = [
             {
                 "Job Name": "Program Manager",
@@ -212,7 +217,7 @@
         const loadingOverlay = document.getElementById('loading');
         const userIdDisplay = document.getElementById('userIdDisplay');
 
-        // Function to show/hide loading spinner
+        // --- Utility Functions ---
         function showLoading() {
             loadingOverlay.classList.remove('hidden');
         }
@@ -221,7 +226,6 @@
             loadingOverlay.classList.add('hidden');
         }
 
-        // Function to display messages to the user
         function showMessage(message, type = 'info') {
             const messageBox = document.getElementById('message-box');
             const messageContent = document.getElementById('message-content');
@@ -237,14 +241,22 @@
             }
             messageBox.classList.remove('hidden');
             setTimeout(() => {
-                messageBox.classList.add('hidden'); // Auto-hide after 5 seconds
+                messageBox.classList.add('hidden'); 
             }, 5000);
         }
 
-        // Function to render the table rows based on jobData
+        // --- Firebase Initialization and Data Loading ---
+        function getJobCollectionRef() {
+            if (!db || !userId) {
+                console.error("Firestore DB or User ID not initialized.");
+                return null;
+            }
+            return collection(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/jobExperience`);
+        }
+
         function renderTable() {
             const tbody = document.querySelector('#jobTable tbody');
-            tbody.innerHTML = ''; // Clear existing rows
+            tbody.innerHTML = ''; 
 
             if (jobData.length === 0) {
                 const row = tbody.insertRow();
@@ -255,7 +267,6 @@
                 return;
             }
 
-            // Sort jobData by start date in descending order (most recent first)
             jobData.sort((a, b) => {
                 const dateA = new Date(a["Job Date Start"]);
                 const dateB = new Date(b["Job Date Start"]);
@@ -265,91 +276,66 @@
 
             jobData.forEach((job, index) => {
                 const row = tbody.insertRow();
-                // Store Firestore document ID in dataset for update/delete operations
                 row.dataset.docId = job.id;
 
-                // Create cells for each column, making them editable
                 const fields = ["Job Name", "Job Company", "Job Date Start", "Job Date End", "Job Description", "Job Skills"];
                 fields.forEach(key => {
                     const cell = row.insertCell();
                     if (key === "Job Description" || key === "Job Skills") {
                         const textarea = document.createElement('textarea');
-                        textarea.value = job[key] || ''; // Ensure value is not null/undefined
+                        textarea.value = job[key] || ''; 
                         textarea.className = "w-full p-2 border rounded resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500";
-                        textarea.rows = 3; // Default rows
-                        // Debounce input to prevent too many Firestore writes
+                        textarea.rows = 3; 
                         let timeout = null;
                         textarea.addEventListener('input', (e) => {
                             clearTimeout(timeout);
                             timeout = setTimeout(() => {
-                                // Update local jobData first
                                 const updatedJob = { ...job, [key]: e.target.value };
-                                // Ensure the job object being updated in `jobData` array has the `id` field
                                 const jobIndex = jobData.findIndex(item => item.id === job.id);
                                 if (jobIndex !== -1) {
                                     jobData[jobIndex] = updatedJob;
                                 }
-                                // Then save to Firestore
                                 updateJobInFirestore(updatedJob.id, { [key]: e.target.value });
-                            }, 500); // Wait 500ms after last input
+                            }, 500); 
                         });
                         cell.appendChild(textarea);
                     } else {
                         const input = document.createElement('input');
                         input.type = 'text';
-                        input.value = job[key] || ''; // Ensure value is not null/undefined
+                        input.value = job[key] || ''; 
                         input.className = "w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500";
                         let timeout = null;
                         input.addEventListener('input', (e) => {
                             clearTimeout(timeout);
                             timeout = setTimeout(() => {
-                                // Update local jobData first
                                 const updatedJob = { ...job, [key]: e.target.value };
-                                // Ensure the job object being updated in `jobData` array has the `id` field
                                 const jobIndex = jobData.findIndex(item => item.id === job.id);
                                 if (jobIndex !== -1) {
                                     jobData[jobIndex] = updatedJob;
                                 }
-                                // Then save to Firestore
                                 updateJobInFirestore(updatedJob.id, { [key]: e.target.value });
-                            }, 500); // Wait 500ms after last input
+                            }, 500); 
                         });
                         cell.appendChild(input);
                     }
                 });
 
-                // Add action buttons
                 const actionsCell = row.insertCell();
                 const deleteBtn = document.createElement('button');
                 deleteBtn.textContent = 'Delete';
                 deleteBtn.className = 'btn btn-danger text-xs';
-                deleteBtn.onclick = () => deleteJobFromFirestore(job.id); // Pass Firestore doc ID
+                deleteBtn.onclick = () => deleteJobFromFirestore(job.id); 
                 actionsCell.appendChild(deleteBtn);
             });
         }
 
-        // Firestore functions
-
-        // Get the collection reference for the current user's job data
-        function getJobCollectionRef() {
-            if (!db || !userId) {
-                console.error("Firestore DB or User ID not initialized.");
-                return null;
-            }
-            // Using firebaseConfig.projectId for the app identifier
-            return collection(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/jobExperience`);
-        }
-
-        // Add a new job to Firestore
         async function addJobToFirestore(newJobData) {
             showLoading();
             try {
                 const colRef = getJobCollectionRef();
                 if (colRef) {
-                    // addDoc automatically generates a new ID
                     const docRef = await addDoc(colRef, newJobData);
                     showMessage('New job added successfully!', 'success');
-                    console.log("Document written with ID: ", docRef.id);
                 }
             } catch (e) {
                 showMessage('Error adding job: ' + e.message, 'error');
@@ -359,14 +345,12 @@
             }
         }
 
-        // Update an existing job in Firestore
         async function updateJobInFirestore(docId, updates) {
             showLoading();
             try {
                 const colRef = getJobCollectionRef();
                 if (colRef) {
-                    await setDoc(doc(colRef, docId), updates, { merge: true }); // merge: true updates specific fields
-                    // showMessage('Job updated successfully!', 'success'); // Too frequent, handled by onSnapshot
+                    await setDoc(doc(colRef, docId), updates, { merge: true }); 
                 }
             } catch (e) {
                 showMessage('Error updating job: ' + e.message, 'error');
@@ -376,7 +360,6 @@
             }
         }
 
-        // Delete a job from Firestore
         async function deleteJobFromFirestore(docId) {
             showLoading();
             try {
@@ -393,18 +376,16 @@
             }
         }
 
-        // Setup real-time listener for job data
         function setupFirestoreListener() {
             const colRef = getJobCollectionRef();
             if (colRef) {
-                // onSnapshot listens for real-time updates
                 onSnapshot(colRef, (snapshot) => {
                     const newJobData = [];
                     snapshot.forEach((doc) => {
                         newJobData.push({ id: doc.id, ...doc.data() });
                     });
-                    jobData = newJobData; // Update local data with Firestore data
-                    renderTable(); // Re-render table
+                    jobData = newJobData; 
+                    renderTable(); 
                     showMessage('Job data synchronized with cloud.', 'info');
                     hideLoading();
                 }, (error) => {
@@ -418,7 +399,6 @@
             }
         }
 
-        // Initial setup function
         async function initializeFirebaseAndLoadData() {
             showLoading();
             try {
@@ -428,23 +408,28 @@
 
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
-                        // User is signed in.
                         userId = user.uid;
                         userIdDisplay.textContent = userId;
                         console.log("User signed in:", userId);
-                        setupFirestoreListener(); // Start listening for data
+                        setupFirestoreListener(); 
                     } else {
-                        // User is signed out. For Heroku, default to anonymous sign-in
                         console.log("User not signed in. Attempting anonymous authentication...");
                         userIdDisplay.textContent = 'Authenticating anonymously...';
                         try {
-                            await signInAnonymously(auth);
+                            const anonymousUserCredential = await signInAnonymously(auth);
+                            userId = anonymousUserCredential.user.uid;
+                            userIdDisplay.textContent = userId;
+                            console.log("Signed in anonymously:", userId);
+                            setupFirestoreListener(); 
                         } catch (error) {
                             showMessage('Anonymous authentication failed: ' + error.message, 'error');
                             console.error("Firebase authentication error:", error);
-                            userIdDisplay.textContent = 'Failed to authenticate';
-                            hideLoading();
+                            userIdDisplay.textContent = 'Authentication Failed'; 
+                            hideLoading(); 
                         }
+                    }
+                    if (userId) { 
+                        hideLoading();
                     }
                 });
             } catch (error) {
@@ -454,7 +439,6 @@
             }
         }
 
-        // Event listener for adding a new row
         document.getElementById('addRowBtn').addEventListener('click', async () => {
             if (!userId) {
                 showMessage('Please wait for authentication to complete before adding data.', 'info');
@@ -471,7 +455,6 @@
             await addJobToFirestore(newJob);
         });
 
-        // Event listener for the "Force Save Data" button
         document.getElementById('saveBtn').addEventListener('click', async () => {
             if (!userId) {
                 showMessage('Please wait for authentication to complete before saving data.', 'info');
@@ -481,27 +464,21 @@
             try {
                 const colRef = getJobCollectionRef();
                 if (colRef) {
-                    // Fetch existing docs in Firestore to compare and update/add
                     const existingFirestoreDocsSnapshot = await getDocs(query(colRef));
                     const existingFirestoreDocsMap = new Map();
                     existingFirestoreDocsSnapshot.forEach(doc => {
                         existingFirestoreDocsMap.set(doc.id, doc.data());
                     });
 
-                    // Add/Update jobs from local jobData to Firestore
                     for (const job of jobData) {
                         if (job.id && existingFirestoreDocsMap.has(job.id)) {
-                            // If job has an ID and exists in Firestore, update it
                             await updateJobInFirestore(job.id, job);
-                            existingFirestoreDocsMap.delete(job.id); // Mark as processed
+                            existingFirestoreDocsMap.delete(job.id); 
                         } else {
-                            // If it's a new job (no ID or not in Firestore), add it
                             await addJobToFirestore(job);
                         }
                     }
 
-                    // Any remaining docs in existingFirestoreDocsMap should be deleted from Firestore
-                    // because they are no longer in our local jobData
                     for (const docId of existingFirestoreDocsMap.keys()) {
                         await deleteJobFromFirestore(docId);
                     }
@@ -516,7 +493,6 @@
             }
         });
 
-        // Initialize Firebase and load data when the page loads
         window.onload = initializeFirebaseAndLoadData;
     </script>
 </body>
