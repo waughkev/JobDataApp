@@ -320,31 +320,51 @@
             const scoredJobData = [];
             jobData.forEach(job => {
                 let jobScore = 0;
-                const jobSkillsSet = new Set(tokenizeAndFilter(job["Job Skills"] || ''));
-                const jobDescriptionContentSet = new Set(tokenizeAndFilter(job["Job Description"] || ''));
+                // Accumulate all skills and descriptions from main job and subprojects
+                const allJobContentTokens = new Set();
+                allJobContentTokens.add(...tokenizeAndFilter(job["Job Skills"] || ''));
+                allJobContentTokens.add(...tokenizeAndFilter(job["Job Description"] || ''));
+
+                (job.projects || []).forEach(subproject => {
+                    allJobContentTokens.add(...tokenizeAndFilter(subproject.subprojectSkills || ''));
+                    allJobContentTokens.add(...tokenizeAndFilter(subproject.subprojectDescription || ''));
+                    allJobContentTokens.add(...tokenizeAndFilter(subproject.subprojectRole || ''));
+                    allJobContentTokens.add(...tokenizeAndFilter(subproject.subprojectName || ''));
+                });
 
                 allJobDescKeywords.forEach(keyword => {
-                    if (jobSkillsSet.has(keyword)) {
-                        jobScore += weightedJobDescWords.has(keyword) ? 5 : 2; 
-                    } else if (jobDescriptionContentSet.has(keyword)) {
-                        jobScore += weightedJobDescWords.has(keyword) ? 3 : 1; 
+                    if (allJobContentTokens.has(keyword)) {
+                        jobScore += weightedJobDescWords.has(keyword) ? 5 : 2; // Higher score for weighted, higher for presence in combined content
                     }
                 });
-                if (jobScore > 0) { // Only consider jobs with at least one match
+                if (jobScore > 0) { 
                     scoredJobData.push({ job: job, score: jobScore });
                 }
             });
-            scoredJobData.sort((a, b) => b.score - a.score); // Sort by relevance
-            const topRelevantJobs = scoredJobData.slice(0, 3); // Take top 3 relevant jobs
+            scoredJobData.sort((a, b) => b.score - a.score); 
+            const topRelevantJobs = scoredJobData.slice(0, 3); 
 
             let relevantExperienceString = '';
             if (topRelevantJobs.length > 0) {
-                relevantExperienceString = "\n\nMy most relevant past experiences include:\n";
+                relevantExperienceString = "\n\nMy most relevant past experiences and projects include:\n";
                 topRelevantJobs.forEach(item => {
-                    relevantExperienceString += `- **${item.job["Job Name"]}** at ${item.job["Job Company"]}: ${item.job["Job Description"].substring(0, 100)}...\n`;
-                    if (item.job["Job Skills"]) {
-                        relevantExperienceString += `  Skills: ${item.job["Job Skills"]}\n`;
+                    relevantExperienceString += `- **${item.job["Job Name"]}** at ${item.job["Job Company"]}\n`;
+                    if (item.job["Job Description"]) {
+                        relevantExperienceString += `  Summary: ${item.job["Job Description"].substring(0, 100)}...\n`;
                     }
+                    if (item.job["Job Skills"]) {
+                        relevantExperienceString += `  Overall Skills: ${item.job["Job Skills"]}\n`;
+                    }
+                    (item.job.projects || []).forEach(subproject => {
+                        relevantExperienceString += `  - Subproject: ${subproject.subprojectName || 'N/A'}, Role: ${subproject.subprojectRole || 'N/A'}\n`;
+                        if (subproject.subprojectDescription) {
+                            relevantExperienceString += `    Description: ${subproject.subprojectDescription.substring(0, 100)}...\n`;
+                        }
+                        if (subproject.subprojectSkills) {
+                            relevantExperienceString += `    Skills: ${subproject.subprojectSkills}\n`;
+                        }
+                    });
+                    relevantExperienceString += '\n'; // Add spacing between jobs
                 });
             }
 
@@ -359,7 +379,7 @@
                     if (clContentWords.has(keyword)) {
                         clScore += weightedJobDescWords.has(keyword) ? 3 : 1; 
                     }
-                    if (clTitleWords.has(keyword)) { // Give extra weight if keyword is in title
+                    if (clTitleWords.has(keyword)) { 
                         clScore += weightedJobDescWords.has(keyword) ? 2 : 1;
                     }
                 });
@@ -368,13 +388,13 @@
                 }
             });
             scoredCoverLetters.sort((a, b) => b.score - a.score);
-            const topRelevantCoverLetters = scoredCoverLetters.slice(0, 2); // Take top 2 relevant cover letters
+            const topRelevantCoverLetters = scoredCoverLetters.slice(0, 2); 
 
             let relevantCoverLettersString = '';
             if (topRelevantCoverLetters.length > 0) {
                 relevantCoverLettersString = "\n\nFor inspiration, here are snippets from my past cover letters that align with this role:\n";
                 topRelevantCoverLetters.forEach(item => {
-                    relevantCoverLettersString += `- Title: "${item.cl.title}"\n  Snippet: ${item.cl.content.substring(0, 200)}...\n`; // Truncate for brevity
+                    relevantCoverLettersString += `- Title: "${item.cl.title}"\n  Snippet: ${item.cl.content.substring(0, 200)}...\n`; 
                 });
             }
 
@@ -391,7 +411,7 @@
                 let chatHistory = [];
                 chatHistory.push({ role: "user", parts: [{ text: prompt }] });
                 const payload = { contents: chatHistory };
-                const apiKey = ""; // Canvas will provide this at runtime
+                const apiKey = ""; // Canvas will provide this at runtime. This MUST remain empty.
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                 const response = await fetch(apiUrl, {
@@ -430,4 +450,3 @@
     </script>
 </body>
 </html>
-o
