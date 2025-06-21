@@ -113,7 +113,7 @@
         </div>
 
         <h2 class="text-xl font-semibold text-gray-700 mb-3">Job Description:</h2>
-        <textarea id="jobDescriptionInput" placeholder="Paste the full job description here. Use **double asterisks** for important keywords (e.g., **project management**, **Agile**)."></textarea>
+        <textarea id="jobDescriptionInput" placeholder="Paste the full job description here. Use **double asterisks** for important keywords (e.g., **project management**, **Agile**)." class="mb-4"></textarea>
 
         <button id="tailorResumeBtn" class="btn btn-primary mb-6">Tailor Resume</button>
 
@@ -146,7 +146,7 @@
         let db;
         let auth;
         let userId = null; 
-        let jobData = []; 
+        let jobData = []; // To store job experiences
 
         const loadingOverlay = document.getElementById('loading');
         const userIdDisplay = document.getElementById('userIdDisplay');
@@ -180,6 +180,30 @@
             setTimeout(() => {
                 messageBox.classList.add('hidden'); 
             }, 5000);
+        }
+
+        // Simple tokenizer (copied from tailor.html for consistency)
+        function tokenizeAndFilter(text) {
+            const stopwords = new Set([
+                "a", "an", "and", "are", "as", "at", "be", "but", "by", "for", "if", "in", "into", "is", "it",
+                "no", "not", "of", "on", "or", "such", "that", "the", "their", "then", "there", "these", "they",
+                "this", "to", "was", "will", "with", "from", "you", "your", "we", "our", "us", "i", "my", "me",
+                "he", "she", "it", "him", "her", "his", "hers", "its", "they", "them", "their", "theirs", "what",
+                "when", "where", "who", "whom", "whose", "why", "how", "had", "has", "have", "do", "does", "did",
+                "can", "could", "would", "should", "may", "might", "must", "about", "above", "across", "after",
+                "against", "along", "among", "around", "before", "behind", "below", "beneath", "beside", "between",
+                "beyond", "during", "except", "inside", "like", "near", "off", "on", "onto", "out", "outside",
+                "over", "past", "round", "since", "through", "to", "under", "up", "upon", "within", "without",
+                "via", "also", "very", "much", "more", "most", "less", "least", "just", "only", "even", "indeed",
+                "actually", "really", "so", "too", "well", "away", "back", "down", "forward", "here", "in", "off",
+                "on", "out", "over", "still", "then", "there", "under", "up", "when", "where", "while", "why", "yet",
+                "experience", "responsibilities", "skills", "ability", "proficient", "strong", "proven", "demonstrated",
+                "manage", "lead", "develop", "implement", "create", "drive", "optimize", "support", "collaborate"
+            ]);
+            return text.toLowerCase()
+                       .replace(/[^a-z0-9\s]/g, '') 
+                       .split(/\s+/) 
+                       .filter(word => word.length > 2 && !stopwords.has(word)); 
         }
 
         // --- Firebase Initialization and Data Loading ---
@@ -254,29 +278,6 @@
         }
 
         // --- Resume Tailoring Logic ---
-        function tokenizeAndFilter(text) {
-            const stopwords = new Set([
-                "a", "an", "and", "are", "as", "at", "be", "but", "by", "for", "if", "in", "into", "is", "it",
-                "no", "not", "of", "on", "or", "such", "that", "the", "their", "then", "there", "these", "they",
-                "this", "to", "was", "will", "with", "from", "you", "your", "we", "our", "us", "i", "my", "me",
-                "he", "she", "it", "him", "her", "his", "hers", "its", "they", "them", "their", "theirs", "what",
-                "when", "where", "who", "whom", "whose", "why", "how", "had", "has", "have", "do", "does", "did",
-                "can", "could", "would", "should", "may", "might", "must", "about", "above", "across", "after",
-                "against", "along", "among", "around", "before", "behind", "below", "beneath", "beside", "between",
-                "beyond", "during", "except", "inside", "like", "near", "off", "on", "onto", "out", "outside",
-                "over", "past", "round", "since", "through", "to", "under", "up", "upon", "within", "without",
-                "via", "also", "very", "much", "more", "most", "less", "least", "just", "only", "even", "indeed",
-                "actually", "really", "so", "too", "well", "away", "back", "down", "forward", "here", "in", "off",
-                "on", "out", "over", "still", "then", "there", "under", "up", "when", "where", "while", "why", "yet",
-                "experience", "responsibilities", "skills", "ability", "proficient", "strong", "proven", "demonstrated",
-                "manage", "lead", "develop", "implement", "create", "drive", "optimize", "support", "collaborate"
-            ]);
-            return text.toLowerCase()
-                       .replace(/[^a-z0-9\s]/g, '') 
-                       .split(/\s+/) 
-                       .filter(word => word.length > 2 && !stopwords.has(word)); 
-        }
-
         function tailorResume() {
             showLoading();
             const jobDescriptionRaw = jobDescriptionInput.value.trim();
@@ -305,6 +306,7 @@
 
             const weightedJobDescWords = new Set(tokenizeAndFilter(rawWeightedKeywords.join(' ')));
             const normalJobDescWords = new Set(tokenizeAndFilter(cleanJobDescription));
+            const allJobDescKeywords = new Set([...weightedJobDescWords, ...normalJobDescWords]);
             
             const tailoredContent = [];
             const RELEVANCE_THRESHOLD = 5; 
@@ -314,30 +316,26 @@
 
             jobData.forEach(job => {
                 let jobScore = 0;
-                const matchedKeywordsForJob = new Set(); 
+                const matchedKeywordsForJob = new Set(); // To prevent double-counting scores for the same keyword in a single job
 
-                const jobSkillsSet = new Set(tokenizeAndFilter(job["Job Skills"] || ''));
-                const jobDescriptionContentSet = new Set(tokenizeAndFilter(job["Job Description"] || ''));
-
-                weightedJobDescWords.forEach(keyword => {
-                    if (jobSkillsSet.has(keyword)) {
-                        jobScore += 5; 
-                        matchedKeywordsForJob.add(keyword);
-                    } else if (jobDescriptionContentSet.has(keyword)) {
-                        jobScore += 3; 
-                        matchedKeywordsForJob.add(keyword);
-                    }
+                // Collect all content for matching
+                const allJobContentText = [
+                    job["Job Skills"] || '',
+                    job["Job Description"] || ''
+                ];
+                (job.projects || []).forEach(subproject => {
+                    allJobContentText.push(subproject.subprojectSkills || '');
+                    allJobContentText.push(subproject.subprojectDescription || '');
+                    allJobContentText.push(subproject.subprojectRole || '');
+                    allJobContentText.push(subproject.subprojectName || '');
                 });
+                const allJobContentTokens = new Set(tokenizeAndFilter(allJobContentText.join(' ')));
 
-                normalJobDescWords.forEach(keyword => {
-                    if (!matchedKeywordsForJob.has(keyword)) { 
-                        if (jobSkillsSet.has(keyword)) {
-                            jobScore += 2; 
-                            matchedKeywordsForJob.add(keyword);
-                        } else if (jobDescriptionContentSet.has(keyword)) {
-                            jobScore += 1; 
-                            matchedKeywordsForJob.add(keyword);
-                        }
+
+                allJobDescKeywords.forEach(keyword => {
+                    if (allJobContentTokens.has(keyword)) {
+                        jobScore += weightedJobDescWords.has(keyword) ? 5 : 2; 
+                        matchedKeywordsForJob.add(keyword);
                     }
                 });
 
@@ -347,9 +345,8 @@
             });
 
             scoredJobData.sort((a, b) => {
-                const dateA = new Date(a.job["Job Date Start"]);
-                const dateB = new Date(b.job["Job Date Start"]);
-
+                const dateA = new Date(a.job["Job Date End"] && a.job["Job Date End"].toLowerCase() !== 'present' ? a.job["Job Date End"] : a.job["Job Date Start"]);
+                const dateB = new Date(b.job["Job Date End"] && b.job["Job Date End"].toLowerCase() !== 'present' ? b.job["Job Date End"] : b.job["Job Date Start"]);
                 if (dateB - dateA !== 0) {
                     return dateB - dateA; 
                 }
@@ -367,6 +364,7 @@
                     const sentences = (job["Job Description"] || '').split('. ').map(s => s.trim()).filter(s => s.length > 0);
                     let relevantBulletPoints = new Set(); 
 
+                    // Prioritize sentences containing weighted keywords from main description
                     weightedJobDescWords.forEach(weightedKeyword => {
                         sentences.forEach(sentence => {
                             if (sentence.toLowerCase().includes(weightedKeyword)) {
@@ -375,6 +373,7 @@
                         });
                     });
 
+                    // Add other relevant sentences from main description if not enough matches from weighted keywords
                     if (relevantBulletPoints.size < 3) { 
                         normalJobDescWords.forEach(normalKeyword => {
                             sentences.forEach(sentence => {
@@ -385,6 +384,45 @@
                         });
                     }
 
+                    // Add relevant bullet points from subprojects
+                    (job.projects || []).sort((a, b) => { // Sort subprojects by date for consistent output
+                        const subDateA = new Date(a.subprojectDateEnd && a.subprojectDateEnd.toLowerCase() !== 'present' ? a.subprojectDateEnd : a.subprojectDateStart);
+                        const subDateB = new Date(b.subprojectDateEnd && b.subprojectDateEnd.toLowerCase() !== 'present' ? b.subprojectDateEnd : b.subprojectDateStart);
+                        return subDateB - subDateA;
+                    }).forEach(subproject => {
+                        const subprojectDescriptionSentences = (subproject.subprojectDescription || '').split('. ').map(s => s.trim()).filter(s => s.length > 0);
+                        subprojectDescriptionSentences.forEach(sentence => {
+                            const sentenceTokens = tokenizeAndFilter(sentence);
+                            const hasRelevantKeyword = Array.from(allJobDescKeywords).some(keyword => sentenceTokens.has(keyword));
+                            if (hasRelevantKeyword) {
+                                relevantBulletPoints.add(`- **${subproject.subprojectName || subproject.subprojectRole || 'Project'}**: ${sentence}.`);
+                            }
+                        });
+                        // Add relevant skills from subproject
+                        if (subproject.subprojectSkills) {
+                            const subprojectSkillsArray = subproject.subprojectSkills.split(',').map(s => s.trim()).filter(s => s.length > 0);
+                            const matchedSubSkills = new Set();
+                            subprojectSkillsArray.forEach(skill => {
+                                const tokenizedSkill = tokenizeAndFilter(skill).join(' ');
+                                if (allJobDescKeywords.has(tokenizedSkill)) {
+                                    matchedSubSkills.add(skill);
+                                } else {
+                                    const skillTokens = tokenizeAndFilter(skill);
+                                    skillTokens.forEach(st => {
+                                        if (allJobDescKeywords.has(st)) {
+                                            matchedSubSkills.add(skill);
+                                        }
+                                    });
+                                }
+                            });
+                            if (matchedSubSkills.size > 0) {
+                                relevantBulletPoints.add(`  *Skills*: ${Array.from(matchedSubSkills).join(', ')}`);
+                            }
+                        }
+                    });
+
+
+                    // If still very few, take some generic sentences from main job
                     if (relevantBulletPoints.size === 0 && sentences.length > 0) {
                         relevantBulletPoints.add(`- ${sentences[0]}. (General relevance)`);
                         if (sentences.length > 1) {
@@ -394,27 +432,30 @@
 
                     relevantBulletPoints.forEach(bp => finalOutput += `${bp}\n`);
 
-                    if (job["Job Skills"]) {
-                        const jobSkillsArray = job["Job Skills"].split(',').map(s => s.trim()).filter(s => s.length > 0);
-                        const matchedSkills = new Set();
+                    // Aggregate all skills (main job + subprojects) and filter
+                    const allSkillsText = [job["Job Skills"] || ''];
+                    (job.projects || []).forEach(subproject => {
+                        allSkillsText.push(subproject.subprojectSkills || '');
+                    });
+                    const aggregatedSkillsArray = allSkillsText.join(',').split(',').map(s => s.trim()).filter(s => s.length > 0);
+                    const matchedAggregatedSkills = new Set();
 
-                        jobSkillsArray.forEach(skill => {
-                            const tokenizedSkill = tokenizeAndFilter(skill).join(' '); 
-                            if (weightedJobDescWords.has(tokenizedSkill) || normalJobDescWords.has(tokenizedSkill)) {
-                                matchedSkills.add(skill);
-                            } else {
-                                const skillTokens = tokenizeAndFilter(skill);
-                                skillTokens.forEach(st => {
-                                    if (weightedJobDescWords.has(st) || normalJobDescWords.has(st)) {
-                                        matchedSkills.add(skill);
-                                    }
-                                });
-                            }
-                        });
-
-                        if (matchedSkills.size > 0) {
-                            finalOutput += `- Relevant Skills: ${Array.from(matchedSkills).join(', ')}\n`;
+                    aggregatedSkillsArray.forEach(skill => {
+                        const tokenizedSkill = tokenizeAndFilter(skill).join(' '); 
+                        if (allJobDescKeywords.has(tokenizedSkill)) {
+                            matchedAggregatedSkills.add(skill);
+                        } else {
+                            const skillTokens = tokenizeAndFilter(skill);
+                            skillTokens.forEach(st => {
+                                if (allJobDescKeywords.has(st)) {
+                                    matchedAggregatedSkills.add(skill);
+                                }
+                            });
                         }
+                    });
+
+                    if (matchedAggregatedSkills.size > 0) {
+                        finalOutput += `- Relevant Skills: ${Array.from(matchedAggregatedSkills).join(', ')}\n`;
                     }
                     finalOutput += '\n'; 
                 });
@@ -423,7 +464,7 @@
                 tailoredResumeOutput.textContent = finalOutput;
                 showMessage("Resume tailored successfully!", "success");
             } else {
-                tailoredResumeOutput.textContent = "No relevant job experiences found based on the job description and your defined keywords. Please try: \n1. Refining your job descriptions and skills in the editor. \n2. Using more specific keywords in the job description. \n3. Adjusting the relevance threshold if this is too strict.";
+                tailoredResumeOutput.textContent = "No relevant job experiences found based on the job description and your defined keywords. Please try: \n1. Refining your job descriptions and skills (including subprojects) in the editor. \n2. Using more specific keywords in the job description. \n3. Adjusting the relevance threshold if this is too strict.";
                 showMessage("No relevant experience found.", "info");
             }
             hideLoading();

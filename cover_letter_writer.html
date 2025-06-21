@@ -318,6 +318,7 @@
             const scoredJobData = [];
             jobData.forEach(job => {
                 let jobScore = 0;
+                // Accumulate all skills and descriptions from main job and subprojects
                 const allJobContentTokens = new Set();
                 allJobContentTokens.add(...tokenizeAndFilter(job["Job Skills"] || ''));
                 allJobContentTokens.add(...tokenizeAndFilter(job["Job Description"] || ''));
@@ -331,7 +332,7 @@
 
                 allJobDescKeywords.forEach(keyword => {
                     if (allJobContentTokens.has(keyword)) {
-                        jobScore += weightedJobDescWords.has(keyword) ? 5 : 2; 
+                        jobScore += weightedJobDescWords.has(keyword) ? 5 : 2; // Higher score for weighted, higher for presence in combined content
                     }
                 });
                 if (jobScore > 0) { 
@@ -361,7 +362,7 @@
                             relevantExperienceString += `    Skills: ${subproject.subprojectSkills}\n`;
                         }
                     });
-                    relevantExperienceString += '\n'; 
+                    relevantExperienceString += '\n'; // Add spacing between jobs
                 });
             }
 
@@ -409,7 +410,7 @@
                 chatHistory.push({ role: "user", parts: [{ text: prompt }] });
                 const payload = { contents: chatHistory };
                 // >>> IMPORTANT: Replace "YOUR_GOOGLE_CLOUD_API_KEY_HERE" with your actual API key
-                const apiKey = "AIzaSyCYB24Xf9_RJ8ffUp3DyZWK1YVRI74PaZg"; 
+                const apiKey = "AIzaSyCYB24Xf9_RJ8ffUp3DyZWK1YVRI74PaZg"; // Keep your actual key here.
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                 const response = await fetch(apiUrl, {
