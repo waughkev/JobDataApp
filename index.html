@@ -92,6 +92,43 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        /* New styles for subprojects */
+        .subproject-section {
+            background-color: #f0f4f8; /* Light blue-gray for subproject background */
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            border: 1px solid #cbd5e0;
+        }
+        .subproject-item {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border: 1px dashed #a0aec0;
+            border-radius: 0.375rem;
+            margin-bottom: 0.75rem;
+            background-color: #ffffff;
+        }
+        .subproject-item:last-child {
+            margin-bottom: 0;
+        }
+        .subproject-item label {
+            font-weight: 500;
+            color: #4a5568;
+            grid-column: span 2; /* Labels span full width */
+        }
+        .subproject-item input, .subproject-item textarea {
+            background-color: #edf2f7; /* Lighter background for subproject inputs */
+            font-size: 0.875rem;
+            padding: 0.4rem;
+        }
+        .subproject-actions {
+            grid-column: span 2;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
     </style>
 </head>
 <body class="bg-gray-100 p-6">
@@ -103,7 +140,8 @@
         <nav class="container mx-auto flex justify-center space-x-8">
             <a href="index.html" class="text-black hover:text-indigo-300 font-medium transition duration-300">Job Editor</a>
             <a href="tailor.html" class="text-black hover:text-indigo-300 font-medium transition duration-300">Resume Tailor</a>
-            <a href="cover_letter_writer.html" class="text-black hover:text-indigo-300 font-medium transition duration-300">Cover Letters</a>
+            <a href="coverletter.html" class="text-black hover:text-indigo-300 font-medium transition duration-300">Cover Letters</a>
+            <a href="cover_letter_writer.html" class="text-black hover:text-indigo-300 font-medium transition duration-300">AI Cover Letter</a>
         </nav>
     </div>
 
@@ -119,29 +157,16 @@
             </span>
         </div>
 
-        <div class="mb-6">
-            <button id="addRowBtn" class="btn btn-primary mr-2">Add New Row</button>
-            <button id="saveBtn" class="btn btn-success">Force Save Data</button>
+        <div class="mb-6 flex justify-between items-center">
+            <button id="addRowBtn" class="btn btn-primary mr-2">Add New Job Experience</button>
+            <button id="saveBtn" class="btn btn-success">Force Save All Data</button>
         </div>
 
         <div class="overflow-x-auto rounded-lg shadow">
-            <table class="min-w-full bg-white rounded-lg" id="jobTable">
-                <thead>
-                    <tr>
-                        <th class="py-3 px-4 uppercase text-xs text-gray-600">Job Name</th>
-                        <th class="py-3 px-4 uppercase text-xs text-gray-600">Job Company</th>
-                        <th class="py-3 px-4 uppercase text-xs text-gray-600">Job Date Start</th>
-                        <th class="py-3 px-4 uppercase text-xs text-gray-600">Job Date End</th>
-                        <th class="py-3 px-4 uppercase text-xs text-gray-600">Job Description</th>
-                        <th class="py-3 px-4 uppercase text-xs text-gray-600">Job Skills</th>
-                        <th class="py-3 px-4 uppercase text-xs text-gray-600">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Table rows will be populated here by JavaScript -->
-                    <tr><td colspan="7" class="text-center py-4 text-gray-500">Loading job data...</td></tr>
-                </tbody>
-            </table>
+            <div class="min-w-full bg-white rounded-lg p-4" id="jobList">
+                <p class="text-center py-4 text-gray-500">Loading job data...</p>
+                <!-- Job items will be populated here by JavaScript -->
+            </div>
         </div>
     </div>
 
@@ -169,53 +194,12 @@
         let auth;
         let userId = null; 
 
-        let jobData = [];
-
-        const resumeData = [
-            {
-                "Job Name": "Program Manager",
-                "Job Company": "Jackson Dawson",
-                "Job Date Start": "May 2021",
-                "Job Date End": "June 2025",
-                "Job Description": "Managed 3 programs and their teams simultaneously in gamification, learning management, and event management. Managed resources, timeline, and budget for those programs. Managed strategy to execution of applications ranging from gamification websites, off-roading events, and learning management websites. Managed projects in Agile using Azure DevOps.",
-                "Job Skills": "Program Management, Team Leadership, Budget Management, Agile, Azure DevOps, Gamification, Learning Management, Event Management"
-            },
-            {
-                "Job Name": "Technology Project Manager - Dealer Websites",
-                "Job Company": "FordDirect",
-                "Job Date Start": "October 2015",
-                "Job Date End": "May 2021",
-                "Job Description": "Managed technology products for the FordDirect Dealer Websites Program. Products/projects include: Dealer Website (Ford & Lincoln, US & Canada) integration of Ford/FordDirect services with third party website vendors, Domain Management, Adobe Launch Analytics Tagging, & Digital Campaigns.",
-                "Job Skills": "Project Management, Website Management, Vendor Management, Domain Management, Adobe Launch, Digital Campaigns, Ford, Lincoln"
-            },
-            {
-                "Job Name": "eCommerce Content Manager",
-                "Job Company": "Modern Builders Supply - BuyMBS.com",
-                "Job Date Start": "June 2013",
-                "Job Date End": "October 2015",
-                "Job Description": "Lead team of content specialists adding content and products for the BuyMBS.com eCommerce website selling construction equipment and supplies.",
-                "Job Skills": "eCommerce, Content Management, Team Leadership, Product Management, Website Content"
-            },
-            {
-                "Job Name": "Website Strategy Manager",
-                "Job Company": "Burkett Restaurant Equipment - Burkett.com",
-                "Job Date Start": "June 2010",
-                "Job Date End": "April 2013",
-                "Job Description": "Managed day to day operations of online eCommerce website for a Restaurant Equipment Dealer",
-                "Job Skills": "Website Strategy, eCommerce Operations, Website Management"
-            },
-            {
-                "Job Name": "Director of Internet Operations",
-                "Job Company": "FanClubCard.com",
-                "Job Date Start": "July 2008",
-                "Job Date End": "November 2010",
-                "Job Description": "Managed business directory website, including content, email marketing, and social media.",
-                "Job Skills": "Internet Operations, Content Management, Email Marketing, Social Media, Business Directory"
-            }
-        ];
+        let jobData = []; // Stores main job experience entries
+        let currentEditingJobs = new Set(); // Keep track of jobs being edited to prevent re-rendering during active input
 
         const loadingOverlay = document.getElementById('loading');
         const userIdDisplay = document.getElementById('userIdDisplay');
+        const jobListContainer = document.getElementById('jobList');
 
         // --- Utility Functions ---
         function showLoading() {
@@ -254,88 +238,202 @@
             return collection(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/jobExperience`);
         }
 
-        function renderTable() {
-            const tbody = document.querySelector('#jobTable tbody');
-            tbody.innerHTML = ''; 
+        function renderJobList() {
+            jobListContainer.innerHTML = ''; // Clear existing content
 
             if (jobData.length === 0) {
-                const row = tbody.insertRow();
-                const cell = row.insertCell();
-                cell.colSpan = 7;
-                cell.className = "text-center py-4 text-gray-500";
-                cell.textContent = "No job entries. Add a new row to get started!";
+                jobListContainer.innerHTML = '<p class="text-center py-4 text-gray-500">No job entries. Add a new job experience to get started!</p>';
                 return;
             }
 
+            // Sort main jobs by end date (or start date if end date is missing/future) in descending order
             jobData.sort((a, b) => {
-                const dateA = new Date(a["Job Date Start"]);
-                const dateB = new Date(b["Job Date Start"]);
+                const dateA = new Date(a["Job Date End"] && a["Job Date End"].toLowerCase() !== 'present' ? a["Job Date End"] : a["Job Date Start"]);
+                const dateB = new Date(b["Job Date End"] && b["Job Date End"].toLowerCase() !== 'present' ? b["Job Date End"] : b["Job Date Start"]);
                 return dateB - dateA;
             });
 
+            jobData.forEach(job => {
+                const jobDiv = document.createElement('div');
+                jobDiv.className = 'bg-white rounded-lg shadow-md p-6 mb-6 border border-gray-200';
+                jobDiv.dataset.docId = job.id;
 
-            jobData.forEach((job, index) => {
-                const row = tbody.insertRow();
-                row.dataset.docId = job.id;
+                jobDiv.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Job Name</label>
+                            <input type="text" data-field="Job Name" value="${job["Job Name"] || ''}" class="mt-1 block w-full p-2 border rounded-md shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Job Company</label>
+                            <input type="text" data-field="Job Company" value="${job["Job Company"] || ''}" class="mt-1 block w-full p-2 border rounded-md shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Job Date Start</label>
+                            <input type="text" data-field="Job Date Start" value="${job["Job Date Start"] || ''}" class="mt-1 block w-full p-2 border rounded-md shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Job Date End</label>
+                            <input type="text" data-field="Job Date End" value="${job["Job Date End"] || ''}" class="mt-1 block w-full p-2 border rounded-md shadow-sm">
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-2 mb-4">
+                        <button class="btn btn-danger text-sm" data-action="delete-job">Delete Job</button>
+                    </div>
 
-                const fields = ["Job Name", "Job Company", "Job Date Start", "Job Date End", "Job Description", "Job Skills"];
-                fields.forEach(key => {
-                    const cell = row.insertCell();
-                    if (key === "Job Description" || key === "Job Skills") {
-                        const textarea = document.createElement('textarea');
-                        textarea.value = job[key] || ''; 
-                        textarea.className = "w-full p-2 border rounded resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500";
-                        textarea.rows = 3; 
-                        let timeout = null;
-                        textarea.addEventListener('input', (e) => {
-                            clearTimeout(timeout);
-                            timeout = setTimeout(() => {
-                                const updatedJob = { ...job, [key]: e.target.value };
-                                const jobIndex = jobData.findIndex(item => item.id === job.id);
-                                if (jobIndex !== -1) {
-                                    jobData[jobIndex] = updatedJob;
-                                }
-                                updateJobInFirestore(updatedJob.id, { [key]: e.target.value });
-                            }, 500); 
-                        });
-                        cell.appendChild(textarea);
-                    } else {
-                        const input = document.createElement('input');
-                        input.type = 'text';
-                        input.value = job[key] || ''; 
-                        input.className = "w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500";
-                        let timeout = null;
-                        input.addEventListener('input', (e) => {
-                            clearTimeout(timeout);
-                            timeout = setTimeout(() => {
-                                const updatedJob = { ...job, [key]: e.target.value };
-                                const jobIndex = jobData.findIndex(item => item.id === job.id);
-                                if (jobIndex !== -1) {
-                                    jobData[jobIndex] = updatedJob;
-                                }
-                                updateJobInFirestore(updatedJob.id, { [key]: e.target.value });
-                            }, 500); 
-                        });
-                        cell.appendChild(input);
-                    }
+                    <h3 class="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Subprojects / Roles within this Company</h3>
+                    <div class="subproject-section" data-subprojects-container>
+                        <!-- Subprojects will be rendered here -->
+                    </div>
+                    <div class="mt-4 flex justify-end">
+                        <button class="btn btn-primary text-sm" data-action="add-subproject">Add Subproject / Role</button>
+                    </div>
+                `;
+
+                // Add event listeners for main job fields
+                jobDiv.querySelectorAll('input[data-field]').forEach(input => {
+                    let timeout = null;
+                    input.addEventListener('input', (e) => {
+                        clearTimeout(timeout);
+                        const docId = jobDiv.dataset.docId;
+                        const field = e.target.dataset.field;
+                        const value = e.target.value;
+                        
+                        // Mark as editing to prevent re-render during input
+                        currentEditingJobs.add(docId); 
+
+                        timeout = setTimeout(async () => {
+                            await updateJobInFirestore(docId, { [field]: value });
+                            currentEditingJobs.delete(docId); // Remove from editing set
+                        }, 750); // Debounce time
+                    });
                 });
 
-                const actionsCell = row.insertCell();
-                const deleteBtn = document.createElement('button');
-                deleteBtn.textContent = 'Delete';
-                deleteBtn.className = 'btn btn-danger text-xs';
-                deleteBtn.onclick = () => deleteJobFromFirestore(job.id); 
-                actionsCell.appendChild(deleteBtn);
+                // Add event listener for delete job button
+                jobDiv.querySelector('button[data-action="delete-job"]').addEventListener('click', () => {
+                    deleteJobFromFirestore(job.id);
+                });
+
+                // Render subprojects
+                const subprojectsContainer = jobDiv.querySelector('[data-subprojects-container]');
+                renderSubprojects(job.id, job.projects || [], subprojectsContainer);
+
+                // Add event listener for adding subproject
+                jobDiv.querySelector('button[data-action="add-subproject"]').addEventListener('click', () => {
+                    addSubprojectToJob(job.id);
+                });
+
+                jobListContainer.appendChild(jobDiv);
             });
         }
+
+        function renderSubprojects(jobId, subprojects, containerElement) {
+            containerElement.innerHTML = ''; // Clear existing subprojects
+
+            if (!subprojects || subprojects.length === 0) {
+                containerElement.innerHTML = '<p class="text-sm text-gray-600 text-center py-2">No subprojects yet. Click "Add Subproject / Role" below.</p>';
+                return;
+            }
+
+            // Sort subprojects by end date (or start date) in descending order, latest first
+            subprojects.sort((a, b) => {
+                const dateA = new Date(a.subprojectDateEnd && a.subprojectDateEnd.toLowerCase() !== 'present' ? a.subprojectDateEnd : a.subprojectDateStart);
+                const dateB = new Date(b.subprojectDateEnd && b.subprojectDateEnd.toLowerCase() !== 'present' ? b.subprojectDateEnd : b.subprojectDateStart);
+                return dateB - dateA;
+            });
+
+            subprojects.forEach((subproject, subIndex) => {
+                const subprojectId = subproject.id || `temp-${subIndex}-${Date.now()}`; // Use Firestore ID or temp ID
+                
+                const subprojectDiv = document.createElement('div');
+                subprojectDiv.className = 'subproject-item';
+                subprojectDiv.dataset.subprojectId = subprojectId; // Use for identifying updates
+
+                subprojectDiv.innerHTML = `
+                    <label class="col-span-2 text-sm font-medium text-gray-700">Subproject Name</label>
+                    <input type="text" data-subfield="subprojectName" value="${subproject.subprojectName || ''}" class="col-span-2 mt-1 block w-full p-2 border rounded-md shadow-sm">
+                    
+                    <label class="col-span-2 text-sm font-medium text-gray-700">Subproject Role</label>
+                    <input type="text" data-subfield="subprojectRole" value="${subproject.subprojectRole || ''}" class="col-span-2 mt-1 block w-full p-2 border rounded-md shadow-sm">
+
+                    <label class="col-span-2 text-sm font-medium text-gray-700">Subproject Date Start</label>
+                    <input type="text" data-subfield="subprojectDateStart" value="${subproject.subprojectDateStart || ''}" class="col-span-2 mt-1 block w-full p-2 border rounded-md shadow-sm">
+                    
+                    <label class="col-span-2 text-sm font-medium text-gray-700">Subproject Date End</label>
+                    <input type="text" data-subfield="subprojectDateEnd" value="${subproject.subprojectDateEnd || ''}" class="col-span-2 mt-1 block w-full p-2 border rounded-md shadow-sm">
+
+                    <label class="col-span-2 text-sm font-medium text-gray-700">Subproject Description</label>
+                    <textarea data-subfield="subprojectDescription" class="col-span-2 mt-1 block w-full p-2 border rounded-md shadow-sm" rows="3">${subproject.subprojectDescription || ''}</textarea>
+                    
+                    <label class="col-span-2 text-sm font-medium text-gray-700">Subproject Skills (comma-separated)</label>
+                    <textarea data-subfield="subprojectSkills" class="col-span-2 mt-1 block w-full p-2 border rounded-md shadow-sm" rows="2">${subproject.subprojectSkills || ''}</textarea>
+
+                    <div class="subproject-actions">
+                        <button class="btn btn-danger text-xs" data-action="delete-subproject">Delete Subproject</button>
+                    </div>
+                `;
+
+                // Add input event listeners for subproject fields
+                subprojectDiv.querySelectorAll('input[data-subfield], textarea[data-subfield]').forEach(input => {
+                    let timeout = null;
+                    input.addEventListener('input', (e) => {
+                        clearTimeout(timeout);
+                        const subField = e.target.dataset.subfield;
+                        const value = e.target.value;
+                        
+                        // Mark main job as editing
+                        currentEditingJobs.add(jobId);
+
+                        timeout = setTimeout(async () => {
+                            // Find the main job in jobData
+                            const mainJobIndex = jobData.findIndex(j => j.id === jobId);
+                            if (mainJobIndex !== -1) {
+                                // Find the subproject within the main job's projects array
+                                const currentProjects = [...(jobData[mainJobIndex].projects || [])];
+                                const subprojectToUpdateIndex = currentProjects.findIndex(sp => (sp.id === subprojectId) || (subprojectId.startsWith('temp-') && sp.subprojectName === subproject.subprojectName && sp.subprojectRole === subproject.subprojectRole)); // Basic fallback for temp IDs
+
+                                if (subprojectToUpdateIndex !== -1) {
+                                    currentProjects[subprojectToUpdateIndex] = {
+                                        ...currentProjects[subprojectToUpdateIndex],
+                                        [subField]: value
+                                    };
+                                    await updateJobInFirestore(jobId, { projects: currentProjects });
+                                }
+                            }
+                            currentEditingJobs.delete(jobId); // Remove from editing set
+                        }, 750); // Debounce time
+                    });
+                });
+
+                // Add delete subproject listener
+                subprojectDiv.querySelector('button[data-action="delete-subproject"]').addEventListener('click', () => {
+                    deleteSubprojectFromJob(jobId, subprojectId);
+                });
+
+                containerElement.appendChild(subprojectDiv);
+            });
+        }
+
+
+        // --- Firestore Functions ---
 
         async function addJobToFirestore(newJobData) {
             showLoading();
             try {
                 const colRef = getJobCollectionRef();
                 if (colRef) {
-                    const docRef = await addDoc(colRef, newJobData);
-                    showMessage('New job added successfully!', 'success');
+                    const defaultSubproject = {
+                        subprojectName: "",
+                        subprojectRole: "",
+                        subprojectDescription: "",
+                        subprojectSkills: "",
+                        subprojectDateStart: "",
+                        subprojectDateEnd: ""
+                    };
+                    // Ensure job has a 'projects' array, optionally with one default subproject
+                    const jobWithProjects = { ...newJobData, projects: [defaultSubproject] }; 
+                    const docRef = await addDoc(colRef, jobWithProjects);
+                    showMessage('New job experience added successfully!', 'success');
                 }
             } catch (e) {
                 showMessage('Error adding job: ' + e.message, 'error');
@@ -346,17 +444,28 @@
         }
 
         async function updateJobInFirestore(docId, updates) {
-            showLoading();
+            // Check if this job is currently being edited to avoid re-rendering while typing
+            if (currentEditingJobs.has(docId)) {
+                // console.log(`Skipping immediate render for ${docId} as it's being edited.`);
+                // We still want to send the update to Firestore, but delay the UI update.
+            } else {
+                showLoading(); // Show loading only if not actively editing
+            }
+
             try {
                 const colRef = getJobCollectionRef();
                 if (colRef) {
                     await setDoc(doc(colRef, docId), updates, { merge: true }); 
+                    // onSnapshot listener will handle re-rendering, so no direct renderTable() call here
                 }
             } catch (e) {
                 showMessage('Error updating job: ' + e.message, 'error');
                 console.error("Error updating document: ", e);
             } finally {
-                hideLoading();
+                // If not actively editing, hide loading. If editing, it will be hidden by onSnapshot or after debounce.
+                if (!currentEditingJobs.has(docId)) { 
+                    hideLoading();
+                }
             }
         }
 
@@ -366,7 +475,7 @@
                 const colRef = getJobCollectionRef();
                 if (colRef) {
                     await deleteDoc(doc(colRef, docId));
-                    showMessage('Job deleted successfully!', 'success');
+                    showMessage('Job experience deleted successfully!', 'success');
                 }
             } catch (e) {
                 showMessage('Error deleting job: ' + e.message, 'error');
@@ -376,6 +485,54 @@
             }
         }
 
+        // Function to add a new subproject to an existing job
+        async function addSubprojectToJob(jobId) {
+            showLoading();
+            try {
+                const jobDocRef = doc(getJobCollectionRef(), jobId);
+                const currentJobDoc = jobData.find(job => job.id === jobId);
+
+                const newSubproject = {
+                    id: crypto.randomUUID(), // Unique ID for the subproject
+                    subprojectName: "New Subproject",
+                    subprojectRole: "Role",
+                    subprojectDescription: "",
+                    subprojectSkills: "",
+                    subprojectDateStart: "",
+                    subprojectDateEnd: ""
+                };
+
+                const updatedProjects = [...(currentJobDoc.projects || []), newSubproject];
+                await updateJobInFirestore(jobId, { projects: updatedProjects });
+                showMessage('New subproject added!', 'success');
+            } catch (e) {
+                showMessage('Error adding subproject: ' + e.message, 'error');
+                console.error("Error adding subproject: ", e);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Function to delete a subproject from an existing job
+        async function deleteSubprojectFromJob(jobId, subprojectId) {
+            showLoading();
+            try {
+                const currentJobDoc = jobData.find(job => job.id === jobId);
+                if (currentJobDoc) {
+                    const updatedProjects = (currentJobDoc.projects || []).filter(sp => sp.id !== subprojectId);
+                    await updateJobInFirestore(jobId, { projects: updatedProjects });
+                    showMessage('Subproject deleted!', 'success');
+                }
+            } catch (e) {
+                showMessage('Error deleting subproject: ' + e.message, 'error');
+                console.error("Error deleting subproject: ", e);
+            } finally {
+                hideLoading();
+            }
+        }
+
+
+        // Setup real-time listener for job data
         function setupFirestoreListener() {
             const colRef = getJobCollectionRef();
             if (colRef) {
@@ -385,8 +542,14 @@
                         newJobData.push({ id: doc.id, ...doc.data() });
                     });
                     jobData = newJobData; 
-                    renderTable(); 
-                    showMessage('Job data synchronized with cloud.', 'info');
+                    
+                    // Only re-render if no job is currently being edited
+                    if (currentEditingJobs.size === 0) {
+                        renderJobList(); 
+                        showMessage('Job data synchronized with cloud.', 'info');
+                    } else {
+                        // console.log("Skipping full re-render due to active editing.");
+                    }
                     hideLoading();
                 }, (error) => {
                     showMessage('Error fetching real-time updates: ' + error.message, 'error');
@@ -445,12 +608,11 @@
                 return;
             }
             const newJob = {
-                "Job Name": "",
-                "Job Company": "",
+                "Job Name": "New Job",
+                "Job Company": "Company Name",
                 "Job Date Start": "",
-                "Job Date End": "",
-                "Job Description": "",
-                "Job Skills": ""
+                "Job Date End": "Present",
+                "projects": [] // Initialize with an empty projects array
             };
             await addJobToFirestore(newJob);
         });
@@ -470,17 +632,31 @@
                         existingFirestoreDocsMap.set(doc.id, doc.data());
                     });
 
+                    // Update/add jobs from local jobData to Firestore
                     for (const job of jobData) {
+                        // Ensure all subprojects have unique IDs before saving.
+                        // This handles newly added subprojects which might have temp IDs.
+                        const cleanedProjects = (job.projects || []).map(sp => ({
+                            ...sp,
+                            id: sp.id && !sp.id.startsWith('temp-') ? sp.id : crypto.randomUUID()
+                        }));
+
+                        const jobToSave = { ...job, projects: cleanedProjects };
+                        delete jobToSave.id; // Don't save the Firestore doc ID within the document itself
+
                         if (job.id && existingFirestoreDocsMap.has(job.id)) {
-                            await updateJobInFirestore(job.id, job);
+                            // If job has an ID and exists in Firestore, update it
+                            await setDoc(doc(colRef, job.id), jobToSave, { merge: true });
                             existingFirestoreDocsMap.delete(job.id); 
                         } else {
-                            await addJobToFirestore(job);
+                            // If it's a new job (no ID or not in Firestore), add it
+                            await addDoc(colRef, jobToSave);
                         }
                     }
 
+                    // Any remaining docs in existingFirestoreDocsMap should be deleted from Firestore
                     for (const docId of existingFirestoreDocsMap.keys()) {
-                        await deleteJobFromFirestore(docId);
+                        await deleteDoc(doc(colRef, docId));
                     }
 
                     showMessage('All data synced with Firestore.', 'success');
@@ -497,4 +673,3 @@
     </script>
 </body>
 </html>
-    
