@@ -192,14 +192,15 @@
                 "when", "where", "who", "whom", "whose", "why", "how", "had", "has", "have", "do", "does", "did",
                 "can", "could", "would", "should", "may", "might", "must", "about", "above", "across", "after",
                 "against", "along", "among", "around", "before", "behind", "below", "beneath", "beside", "between",
-                "beyond", "during", "except", "inside", "like", "near", "off", "on", "onto", "out", "over", "past",
-                "round", "since", "through", "to", "under", "up", "upon", "within", "without",
+                "beyond", "during", "except", "inside", "like", "near", "off", "on", "onto", "out", "outside",
+                "over", "past", "round", "since", "through", "to", "under", "up", "upon", "within", "without",
                 "via", "also", "very", "much", "more", "most", "less", "least", "just", "only", "even", "indeed",
                 "actually", "really", "so", "too", "well", "away", "back", "down", "forward", "here", "in", "off",
                 "on", "out", "over", "still", "then", "there", "under", "up", "when", "where", "while", "why", "yet",
                 "experience", "responsibilities", "skills", "ability", "proficient", "strong", "proven", "demonstrated",
                 "manage", "lead", "develop", "implement", "create", "drive", "optimize", "support", "collaborate"
             ]);
+            // Convert to lowercase, remove non-alphanumeric (except spaces), split by space, filter stopwords
             return text.toLowerCase()
                        .replace(/[^a-z0-9\s]/g, '') 
                        .split(/\s+/) 
@@ -299,6 +300,7 @@
             const rawWeightedKeywords = [];
             let cleanJobDescription = jobDescriptionRaw;
 
+            // Extract weighted keywords (e.g., **keyword**) and clean the job description
             while ((match = weightedRegex.exec(jobDescriptionRaw)) !== null) {
                 rawWeightedKeywords.push(match[1]); 
                 cleanJobDescription = cleanJobDescription.replace(match[0], match[1]); 
@@ -306,9 +308,9 @@
 
             const weightedJobDescWords = new Set(tokenizeAndFilter(rawWeightedKeywords.join(' ')));
             const normalJobDescWords = new Set(tokenizeAndFilter(cleanJobDescription));
+            // Combine all keywords from job description for broad matching
             const allJobDescKeywords = new Set([...weightedJobDescWords, ...normalJobDescWords]);
             
-            const tailoredContent = [];
             const RELEVANCE_THRESHOLD = 5; 
             let totalMatchedRoles = 0;
 
@@ -316,9 +318,8 @@
 
             jobData.forEach(job => {
                 let jobScore = 0;
-                const matchedKeywordsForJob = new Set(); 
 
-                // Collect all content for matching
+                // Collect all content (description, skills, and all subproject details) for keyword matching
                 const allJobContentText = [
                     job["Job Skills"] || '',
                     job["Job Description"] || ''
@@ -326,16 +327,17 @@
                 (job.projects || []).forEach(subproject => {
                     allJobContentText.push(subproject.subprojectSkills || '');
                     allJobContentText.push(subproject.subprojectDescription || '');
-                    allJobContentText.push(subproject.subprojectRole || '');
-                    allJobContentText.push(subproject.subprojectName || '');
+                    allJobContentText.push(subproject.subprojectRole || ''); // Include role for keywords
+                    allJobContentText.push(subproject.subprojectName || ''); // Include name for keywords
                 });
+                // Tokenize the combined content into a Set for efficient lookup
                 const allJobContentTokens = new Set(tokenizeAndFilter(allJobContentText.join(' ')));
 
 
+                // Score the job based on keyword presence
                 allJobDescKeywords.forEach(keyword => {
                     if (allJobContentTokens.has(keyword)) {
-                        jobScore += weightedJobDescWords.has(keyword) ? 5 : 2; 
-                        matchedKeywordsForJob.add(keyword);
+                        jobScore += weightedJobDescWords.has(keyword) ? 5 : 2; // Higher score for weighted keywords
                     }
                 });
 
@@ -344,6 +346,7 @@
                 }
             });
 
+            // Sort jobs: primary by end date (or start date if 'Present'), secondary by score
             scoredJobData.sort((a, b) => {
                 const dateA = new Date(a.job["Job Date End"] && a.job["Job Date End"].toLowerCase() !== 'present' ? a.job["Job Date End"] : a.job["Job Date Start"]);
                 const dateB = new Date(b.job["Job Date End"] && b.job["Job Date End"].toLowerCase() !== 'present' ? b.job["Job Date End"] : b.job["Job Date Start"]);
@@ -361,78 +364,72 @@
                     totalMatchedRoles++;
                     finalOutput += `**${job["Job Name"]}** at ${job["Job Company"]} (${job["Job Date Start"]} - ${job["Job Date End"]})\n`;
                     
-                    const sentences = (job["Job Description"] || '').split('. ').map(s => s.trim()).filter(s => s.length > 0);
+                    // --- Collect and Deduplicate Bullet Points ---
                     let relevantBulletPoints = new Set(); 
+                    const MAX_BULLET_POINTS_PER_JOB = 5; // Max bullet points per job entry
 
-                    // Prioritize sentences containing weighted keywords from main description
-                    weightedJobDescWords.forEach(weightedKeyword => {
-                        sentences.forEach(sentence => {
-                            if (sentence.toLowerCase().includes(weightedKeyword)) {
-                                relevantBulletPoints.add(`- ${sentence}.`);
-                            }
-                        });
+                    // 1. Process main job description sentences
+                    const mainJobSentences = (job["Job Description"] || '').split('. ').map(s => s.trim()).filter(s => s.length > 0);
+                    mainJobSentences.forEach(sentence => {
+                        if (relevantBulletPoints.size >= MAX_BULLET_POINTS_PER_JOB) return;
+
+                        const sentenceTokensSet = new Set(tokenizeAndFilter(sentence));
+                        const hasWeightedKeyword = Array.from(weightedJobDescWords).some(keyword => sentenceTokensSet.has(keyword));
+                        const hasNormalKeyword = Array.from(normalJobDescWords).some(keyword => sentenceTokensSet.has(keyword));
+
+                        if (hasWeightedKeyword) {
+                            relevantBulletPoints.add(`- ${sentence}.`);
+                        } else if (hasNormalKeyword && relevantBulletPoints.size < (MAX_BULLET_POINTS_PER_JOB - 1)) { // Leave room for weighted
+                            relevantBulletPoints.add(`- ${sentence}.`);
+                        }
                     });
 
-                    // Add other relevant sentences from main description if not enough matches from weighted keywords
-                    if (relevantBulletPoints.size < 3) { 
-                        normalJobDescWords.forEach(normalKeyword => {
-                            sentences.forEach(sentence => {
-                                if (relevantBulletPoints.size < 5 && sentence.toLowerCase().includes(normalKeyword) && !relevantBulletPoints.has(`- ${sentence}.`)) {
-                                    relevantBulletPoints.add(`- ${sentence}.`);
-                                }
-                            });
-                        });
-                    }
-
-                    // Add relevant bullet points from subprojects
+                    // 2. Process subproject descriptions and roles
                     (job.projects || []).sort((a, b) => { // Sort subprojects by date for consistent output
                         const subDateA = new Date(a.subprojectDateEnd && a.subprojectDateEnd.toLowerCase() !== 'present' ? a.subprojectDateEnd : a.subprojectDateStart);
                         const subDateB = new Date(b.subprojectDateEnd && b.subprojectDateEnd.toLowerCase() !== 'present' ? b.subprojectDateEnd : b.subprojectDateStart);
                         return subDateB - subDateA;
                     }).forEach(subproject => {
-                        const subprojectDescriptionSentences = (subproject.subprojectDescription || '').split('. ').map(s => s.trim()).filter(s => s.length > 0);
-                        subprojectDescriptionSentences.forEach(sentence => {
-                            const sentenceTokensSet = new Set(tokenizeAndFilter(sentence)); // Convert to Set
+                        if (relevantBulletPoints.size >= MAX_BULLET_POINTS_PER_JOB) return;
+
+                        const subprojectCombinedText = [
+                            subproject.subprojectDescription || '',
+                            subproject.subprojectRole || '',
+                            subproject.subprojectName || ''
+                        ].join(' ').replace(/\s\s+/g, ' ').trim();
+
+                        const subprojectSentences = subprojectCombinedText.split('. ').map(s => s.trim()).filter(s => s.length > 0);
+                        
+                        subprojectSentences.forEach(sentence => {
+                            if (relevantBulletPoints.size >= MAX_BULLET_POINTS_PER_JOB) return;
+
+                            const sentenceTokensSet = new Set(tokenizeAndFilter(sentence));
                             const hasRelevantKeyword = Array.from(allJobDescKeywords).some(keyword => sentenceTokensSet.has(keyword));
+
                             if (hasRelevantKeyword) {
-                                relevantBulletPoints.add(`- **${subproject.subprojectName || subproject.subprojectRole || 'Project'}**: ${sentence}.`);
+                                // Add context to subproject bullet points to differentiate
+                                const prefix = subproject.subprojectName || subproject.subprojectRole;
+                                if (prefix) {
+                                     relevantBulletPoints.add(`- **${prefix}**: ${sentence}.`);
+                                } else {
+                                     relevantBulletPoints.add(`- ${sentence}.`);
+                                }
                             }
                         });
-                        // Add relevant skills from subproject
-                        if (subproject.subprojectSkills) {
-                            const subprojectSkillsArray = subproject.subprojectSkills.split(',').map(s => s.trim()).filter(s => s.length > 0);
-                            const matchedSubSkills = new Set();
-                            subprojectSkillsArray.forEach(skill => {
-                                const tokenizedSkill = tokenizeAndFilter(skill).join(' ');
-                                if (allJobDescKeywords.has(tokenizedSkill)) {
-                                    matchedSubSkills.add(skill);
-                                } else {
-                                    const skillTokens = tokenizeAndFilter(skill);
-                                    skillTokens.forEach(st => {
-                                        if (allJobDescKeywords.has(st)) {
-                                            matchedSubSkills.add(skill);
-                                        }
-                                    });
-                                }
-                            });
-                            if (matchedSubSkills.size > 0) {
-                                relevantBulletPoints.add(`  *Skills*: ${Array.from(matchedSubSkills).join(', ')}`);
-                            }
-                        }
                     });
 
-
-                    // If still very few, take some generic sentences from main job
-                    if (relevantBulletPoints.size === 0 && sentences.length > 0) {
-                        relevantBulletPoints.add(`- ${sentences[0]}. (General relevance)`);
-                        if (sentences.length > 1) {
-                            relevantBulletPoints.add(`- ${sentences[1]}.`);
-                        }
+                    // If still few bullet points, add some general ones from main job description
+                    if (relevantBulletPoints.size < MAX_BULLET_POINTS_PER_JOB && mainJobSentences.length > 0) {
+                        mainJobSentences.forEach(sentence => {
+                            if (relevantBulletPoints.size >= MAX_BULLET_POINTS_PER_JOB) return;
+                            relevantBulletPoints.add(`- ${sentence}.`); // Adds if not already present
+                        });
                     }
 
+                    // Append collected relevant bullet points to final output
                     relevantBulletPoints.forEach(bp => finalOutput += `${bp}\n`);
 
-                    // Aggregate all skills (main job + subprojects) and filter
+                    // --- Aggregate and Filter Skills ---
                     const allSkillsText = [job["Job Skills"] || ''];
                     (job.projects || []).forEach(subproject => {
                         allSkillsText.push(subproject.subprojectSkills || '');
@@ -448,13 +445,14 @@
                             const skillTokens = tokenizeAndFilter(skill);
                             skillTokens.forEach(st => {
                                 if (allJobDescKeywords.has(st)) {
-                                    matchedAggregatedSkills.add(skill);
+                                    matchedAggregatedSkills.add(st); // Add tokenized version to set for accurate deduplication
                                 }
                             });
                         }
                     });
 
                     if (matchedAggregatedSkills.size > 0) {
+                        // Re-convert to original case for display if needed, or just use filtered tokens
                         finalOutput += `- Relevant Skills: ${Array.from(matchedAggregatedSkills).join(', ')}\n`;
                     }
                     finalOutput += '\n'; 
