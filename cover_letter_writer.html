@@ -136,8 +136,8 @@
         let db;
         let auth;
         let userId = null; 
-        let jobData = []; // To store job experiences
-        let coverLettersData = []; // To store past cover letters
+        let jobData = []; 
+        let coverLettersData = []; 
 
         const loadingOverlay = document.getElementById('loading');
         const userIdDisplay = document.getElementById('userIdDisplay');
@@ -216,7 +216,7 @@
         }
 
         async function initializeFirebaseAndLoadData() {
-            showLoading(); // Show loading initially
+            showLoading(); 
             try {
                 app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
@@ -228,7 +228,6 @@
                         userIdDisplay.textContent = userId;
                         console.log("User signed in:", userId);
 
-                        // Load both job experiences and cover letters
                         await Promise.all([
                             new Promise(resolve => onSnapshot(query(getJobCollectionRef()), (snapshot) => {
                                 jobData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -242,7 +241,7 @@
                             }, (error) => { console.error("Error loading cover letters:", error); resolve(); }))
                         ]);
                         showMessage('All data synchronized with cloud.', 'info');
-                        hideLoading(); // Hide loading once all data is loaded
+                        hideLoading(); 
                     } else {
                         console.log("User not signed in. Attempting anonymous authentication...");
                         userIdDisplay.textContent = 'Authenticating anonymously...';
@@ -252,7 +251,6 @@
                             userIdDisplay.textContent = userId;
                             console.log("Signed in anonymously:", userId);
                             
-                            // Load data after anonymous sign-in
                             await Promise.all([
                                 new Promise(resolve => onSnapshot(query(getJobCollectionRef()), (snapshot) => {
                                     jobData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -320,7 +318,6 @@
             const scoredJobData = [];
             jobData.forEach(job => {
                 let jobScore = 0;
-                // Accumulate all skills and descriptions from main job and subprojects
                 const allJobContentTokens = new Set();
                 allJobContentTokens.add(...tokenizeAndFilter(job["Job Skills"] || ''));
                 allJobContentTokens.add(...tokenizeAndFilter(job["Job Description"] || ''));
@@ -334,7 +331,7 @@
 
                 allJobDescKeywords.forEach(keyword => {
                     if (allJobContentTokens.has(keyword)) {
-                        jobScore += weightedJobDescWords.has(keyword) ? 5 : 2; // Higher score for weighted, higher for presence in combined content
+                        jobScore += weightedJobDescWords.has(keyword) ? 5 : 2; 
                     }
                 });
                 if (jobScore > 0) { 
@@ -364,7 +361,7 @@
                             relevantExperienceString += `    Skills: ${subproject.subprojectSkills}\n`;
                         }
                     });
-                    relevantExperienceString += '\n'; // Add spacing between jobs
+                    relevantExperienceString += '\n'; 
                 });
             }
 
@@ -411,7 +408,8 @@
                 let chatHistory = [];
                 chatHistory.push({ role: "user", parts: [{ text: prompt }] });
                 const payload = { contents: chatHistory };
-                const apiKey = ""; // Canvas will provide this at runtime. This MUST remain empty.
+                // >>> IMPORTANT: Replace "YOUR_GOOGLE_CLOUD_API_KEY_HERE" with your actual API key
+                const apiKey = "AIzaSyCYB24Xf9_RJ8ffUp3DyZWK1YVRI74PaZg"; 
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                 const response = await fetch(apiUrl, {
