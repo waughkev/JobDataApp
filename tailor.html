@@ -192,8 +192,8 @@
                 "when", "where", "who", "whom", "whose", "why", "how", "had", "has", "have", "do", "does", "did",
                 "can", "could", "would", "should", "may", "might", "must", "about", "above", "across", "after",
                 "against", "along", "among", "around", "before", "behind", "below", "beneath", "beside", "between",
-                "beyond", "during", "except", "inside", "like", "near", "off", "on", "onto", "out", "outside",
-                "over", "past", "round", "since", "through", "to", "under", "up", "upon", "within", "without",
+                "beyond", "during", "except", "inside", "like", "near", "off", "on", "onto", "out", "over", "past",
+                "round", "since", "through", "to", "under", "up", "upon", "within", "without",
                 "via", "also", "very", "much", "more", "most", "less", "least", "just", "only", "even", "indeed",
                 "actually", "really", "so", "too", "well", "away", "back", "down", "forward", "here", "in", "off",
                 "on", "out", "over", "still", "then", "there", "under", "up", "when", "where", "while", "why", "yet",
@@ -316,7 +316,7 @@
 
             jobData.forEach(job => {
                 let jobScore = 0;
-                const matchedKeywordsForJob = new Set(); // To prevent double-counting scores for the same keyword in a single job
+                const matchedKeywordsForJob = new Set(); 
 
                 // Collect all content for matching
                 const allJobContentText = [
@@ -392,8 +392,8 @@
                     }).forEach(subproject => {
                         const subprojectDescriptionSentences = (subproject.subprojectDescription || '').split('. ').map(s => s.trim()).filter(s => s.length > 0);
                         subprojectDescriptionSentences.forEach(sentence => {
-                            const sentenceTokens = tokenizeAndFilter(sentence);
-                            const hasRelevantKeyword = Array.from(allJobDescKeywords).some(keyword => sentenceTokens.has(keyword));
+                            const sentenceTokensSet = new Set(tokenizeAndFilter(sentence)); // Convert to Set
+                            const hasRelevantKeyword = Array.from(allJobDescKeywords).some(keyword => sentenceTokensSet.has(keyword));
                             if (hasRelevantKeyword) {
                                 relevantBulletPoints.add(`- **${subproject.subprojectName || subproject.subprojectRole || 'Project'}**: ${sentence}.`);
                             }
