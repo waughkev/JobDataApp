@@ -429,7 +429,7 @@
                     // Append collected relevant bullet points to final output
                     relevantBulletPoints.forEach(bp => finalOutput += `${bp}\n`);
 
-                    // --- Aggregate and Filter Skills ---
+                    // --- Aggregate and Filter Skills, preserving original phrasing ---
                     const allSkillsText = [job["Job Skills"] || ''];
                     (job.projects || []).forEach(subproject => {
                         allSkillsText.push(subproject.subprojectSkills || '');
@@ -437,22 +437,19 @@
                     const aggregatedSkillsArray = allSkillsText.join(',').split(',').map(s => s.trim()).filter(s => s.length > 0);
                     const matchedAggregatedSkills = new Set();
 
-                    aggregatedSkillsArray.forEach(skill => {
-                        const tokenizedSkill = tokenizeAndFilter(skill).join(' '); 
-                        if (allJobDescKeywords.has(tokenizedSkill)) {
-                            matchedAggregatedSkills.add(skill);
-                        } else {
-                            const skillTokens = tokenizeAndFilter(skill);
-                            skillTokens.forEach(st => {
-                                if (allJobDescKeywords.has(st)) {
-                                    matchedAggregatedSkills.add(st); // Add tokenized version to set for accurate deduplication
-                                }
-                            });
+                    aggregatedSkillsArray.forEach(skillPhrase => { 
+                        // Tokenize the current skill phrase for matching purposes
+                        const skillPhraseTokens = new Set(tokenizeAndFilter(skillPhrase));
+
+                        // Check if any token in the skill phrase matches any job description keyword
+                        const hasMatchingKeyword = Array.from(skillPhraseTokens).some(token => allJobDescKeywords.has(token));
+                        
+                        if (hasMatchingKeyword) {
+                            matchedAggregatedSkills.add(skillPhrase); // Add the ORIGINAL skill phrase
                         }
                     });
 
                     if (matchedAggregatedSkills.size > 0) {
-                        // Re-convert to original case for display if needed, or just use filtered tokens
                         finalOutput += `- Relevant Skills: ${Array.from(matchedAggregatedSkills).join(', ')}\n`;
                     }
                     finalOutput += '\n'; 
