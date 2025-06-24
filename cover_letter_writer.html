@@ -174,7 +174,7 @@
             }, 5000);
         }
 
-        // Simple tokenizer (copied from tailor.html for consistency)
+        // Simple tokenizer 
         function tokenizeAndFilter(text) {
             const stopwords = new Set([
                 "a", "an", "and", "are", "as", "at", "be", "but", "by", "for", "if", "in", "into", "is", "it",
@@ -344,19 +344,19 @@
 
             let relevantExperienceString = '';
             if (topRelevantJobs.length > 0) {
-                relevantExperienceString = "\n\nMy most relevant past experiences and projects include:\n";
+                relevantExperienceString = "\n\n**My Most Relevant Job Experiences (for factual details):**\n";
                 topRelevantJobs.forEach(item => {
-                    relevantExperienceString += `- **${item.job["Job Name"]}** at ${item.job["Job Company"]}\n`;
+                    relevantExperienceString += `- **${item.job["Job Name"]}** at **${item.job["Job Company"]}** (${item.job["Job Date Start"]} - ${item.job["Job Date End"]})\n`;
                     if (item.job["Job Description"]) {
-                        relevantExperienceString += `  Summary: ${item.job["Job Description"].substring(0, 100)}...\n`;
+                        relevantExperienceString += `  Summary: ${item.job["Job Description"]}\n`;
                     }
                     if (item.job["Job Skills"]) {
                         relevantExperienceString += `  Overall Skills: ${item.job["Job Skills"]}\n`;
                     }
                     (item.job.projects || []).forEach(subproject => {
-                        relevantExperienceString += `  - Subproject: ${subproject.subprojectName || 'N/A'}, Role: ${subproject.subprojectRole || 'N/A'}\n`;
+                        relevantExperienceString += `  - Subproject: "${subproject.subprojectName || 'N/A'}", Role: "${subproject.subprojectRole || 'N/A'}" (${subproject.subprojectDateStart || ''} - ${subproject.subprojectDateEnd || ''})\n`;
                         if (subproject.subprojectDescription) {
-                            relevantExperienceString += `    Description: ${subproject.subprojectDescription.substring(0, 100)}...\n`;
+                            relevantExperienceString += `    Description: ${subproject.subprojectDescription}\n`;
                         }
                         if (subproject.subprojectSkills) {
                             relevantExperienceString += `    Skills: ${subproject.subprojectSkills}\n`;
@@ -366,7 +366,7 @@
                 });
             }
 
-            // --- 2. Identify Most Relevant Past Cover Letters ---
+            // --- 2. Identify Most Relevant Past Cover Letters (for stylistic inspiration) ---
             const scoredCoverLetters = [];
             coverLettersData.forEach(cl => {
                 let clScore = 0;
@@ -390,27 +390,45 @@
 
             let relevantCoverLettersString = '';
             if (topRelevantCoverLetters.length > 0) {
-                relevantCoverLettersString = "\n\nFor inspiration, here are snippets from my past cover letters that align with this role:\n";
+                relevantCoverLettersString = "\n\n**Examples of Past Cover Letter Phrasing and Tone (for inspiration only):**\n";
                 topRelevantCoverLetters.forEach(item => {
-                    relevantCoverLettersString += `- Title: "${item.cl.title}"\n  Snippet: ${item.cl.content.substring(0, 200)}...\n`; 
+                    // To prevent explicit company/job title mentions from past cover letters,
+                    // we'll try to generalize some common patterns. This is a best effort.
+                    let cleanedContent = item.cl.content;
+                    // Replace generic "at [Company]"
+                    cleanedContent = cleanedContent.replace(/at\s+([A-Z][a-zA-Z\s]+?)(?=[\.\,\!\;\)])/g, 'at a relevant company');
+                    // Replace generic "[Role] at [Company]"
+                    cleanedContent = cleanedContent.replace(/([A-Z][a-zA-Z\s]+?)\s+at\s+([A-Z][a-zA-Z\s]+?)(?=[\.\,\!\;\)])/g, 'a relevant role at a company');
+                    // Replace specific "Company Name" if it appears as a standalone entity
+                    // This is hard to do generically without a list of company names, but the prompt will emphasize
+                    // We'll rely more on the prompt for enforcement.
+
+                    relevantCoverLettersString += `- Title: "${item.cl.title}"\n  Snippet: ${cleanedContent.substring(0, 300)}...\n`; // Truncate for brevity
                 });
             }
 
             // --- 3. Construct LLM Prompt ---
-            let prompt = `You are an expert career coach and resume writer. Your task is to draft a professional and compelling cover letter for a job application.`;
+            let prompt = `You are an expert career coach and cover letter writer. Your task is to draft a professional and compelling cover letter for a job application.`;
             prompt += `\n\n**Job Description:**\n${jobDescriptionRaw}`;
-            prompt += `\n\n**My Background Information:**`;
-            prompt += relevantExperienceString;
-            prompt += relevantCoverLettersString;
-            prompt += `\n\nDraft a concise and impactful cover letter (around 3-4 paragraphs) that directly addresses the requirements of the job description using my provided background information. Highlight how my skills and experiences make me an ideal candidate. Focus on specific achievements and quantifiable results where possible. Maintain a professional, confident, and enthusiastic tone. Do not just copy-paste text; synthesize and adapt it. Start directly with the salutation "Dear Hiring Manager,". End with a professional closing.`;
+            prompt += `\n\n${relevantExperienceString}`; // Directly include the experiences
+            prompt += `${relevantCoverLettersString}`; // Directly include past cover letter snippets
+            
+            prompt += `\n\n**Instructions for Drafting:**`;
+            prompt += `\n- Draft a concise and impactful cover letter (around 3-4 paragraphs) that directly addresses the requirements of the job description.`;
+            prompt += `\n- **Crucially, when mentioning your specific job history (roles, companies, dates), ONLY use the information provided under "My Most Relevant Job Experiences." Do NOT infer or use company names or exact job titles from the "Examples of Past Cover Letter Phrasing and Tone." The past cover letter examples are for tone and phrasing inspiration ONLY.**`;
+            prompt += `\n- Highlight how your skills and experiences from your "My Most Relevant Job Experiences" make you an ideal candidate.`;
+            prompt += `\n- Focus on specific achievements and quantifiable results where possible from your background.`;
+            prompt += `\n- Maintain a professional, confident, and enthusiastic tone.`;
+            prompt += `\n- Do not just copy-paste text; synthesize and adapt it.`;
+            prompt += `\n- Start directly with the salutation "Dear Hiring Manager,".`;
+            prompt += `\n- End with a professional closing.`;
 
             // --- 4. Call LLM API ---
             try {
                 let chatHistory = [];
                 chatHistory.push({ role: "user", parts: [{ text: prompt }] });
                 const payload = { contents: chatHistory };
-                // >>> IMPORTANT: Replace "YOUR_GOOGLE_CLOUD_API_KEY_HERE" with your actual API key
-                const apiKey = "AIzaSyCYB24Xf9_RJ8ffUp3DyZWK1YVRI74PaZg"; // Keep your actual key here.
+                const apiKey = "YOUR_GOOGLE_CLOUD_API_KEY_HERE"; // Keep your actual key here.
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                 const response = await fetch(apiUrl, {
