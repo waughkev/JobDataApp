@@ -417,11 +417,13 @@
             prompt += `\n- Draft a concise and impactful cover letter (around 3-4 paragraphs) that directly addresses the requirements of the job description.`;
             prompt += `\n- **Crucially, when mentioning your specific job history (roles, companies, dates), ONLY use the information provided under "My Most Relevant Job Experiences." Do NOT infer or use company names or exact job titles from the "Examples of Past Cover Letter Phrasing and Tone." The past cover letter examples are for tone and phrasing inspiration ONLY.**`;
             prompt += `\n- Highlight how your skills and experiences from your "My Most Relevant Job Experiences" make you an ideal candidate.`;
+            prompt += `\n- Identify key responsibilities from the job description and provide how you can meet those responsibilities`;
             prompt += `\n- Focus on specific achievements and quantifiable results where possible from your background.`;
-            prompt += `\n- Maintain a professional, confident, and enthusiastic tone.`;
+            prompt += `\n- Maintain a professional, confident, and enthusiastic tone. Display empathy and tones of leadership`;
             prompt += `\n- Do not just copy-paste text; synthesize and adapt it.`;
             prompt += `\n- Start directly with the salutation "Dear Hiring Manager,".`;
             prompt += `\n- End with a professional closing.`;
+            
 
             // --- 4. Call LLM API ---
             try {
