@@ -137,11 +137,12 @@
     </div>
 
     <div class="w-full bg-gray-800 p-4 shadow-md">
-        <nav class="container mx-auto flex justify-center space-x-8">
-            <a href="index.html" class="text-black hover:text-indigo-300 font-medium transition duration-300">Job Editor</a>
-            <a href="tailor.html" class="text-black hover:text-indigo-300 font-medium transition duration-300">Resume Tailor</a>
-            <a href="coverletter.html" class="text-black hover:text-indigo-300 font-medium transition duration-300">Cover Letters</a>
-            <a href="cover_letter_writer.html" class="text-black hover:text-indigo-300 font-medium transition duration-300">AI Cover Letter</a>
+        <nav class="container mx-auto flex justify-center space-x-8 items-center">
+            <a href="index.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Job Editor</a>
+            <a href="tailor.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Resume Tailor</a>
+            <a href="coverletter.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Cover Letters</a>
+            <a href="cover_letter_writer.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">AI Cover Letter</a>
+            <button id="authButton" class="btn bg-gray-600 text-white hover:bg-gray-500 ml-4">Loading...</button>
         </nav>
     </div>
 
@@ -173,7 +174,7 @@
     <script type="module">
         // Firebase imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
+        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
         // Your web app's Firebase configuration - MUST BE THE SAME AS YOUR OTHER PAGES
@@ -194,12 +195,13 @@
         let auth;
         let userId = null; 
 
-        let jobData = []; // Stores main job experience entries
-        let currentEditingJobs = new Set(); // Keep track of jobs being edited to prevent re-rendering during active input
+        let jobData = []; 
+        let currentEditingJobs = new Set(); 
 
         const loadingOverlay = document.getElementById('loading');
         const userIdDisplay = document.getElementById('userIdDisplay');
         const jobListContainer = document.getElementById('jobList');
+        const authButton = document.getElementById('authButton'); // Get the auth button
 
         // --- Utility Functions ---
         function showLoading() {
@@ -235,18 +237,18 @@
                 console.error("Firestore DB or User ID not initialized.");
                 return null;
             }
+            // Use the authenticated user's UID for the collection path
             return collection(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/jobExperience`);
         }
 
         function renderJobList() {
-            jobListContainer.innerHTML = ''; // Clear existing content
+            jobListContainer.innerHTML = ''; 
 
             if (jobData.length === 0) {
                 jobListContainer.innerHTML = '<p class="text-center py-4 text-gray-500">No job entries. Add a new job experience to get started!</p>';
                 return;
             }
 
-            // Sort main jobs by end date (or start date if end date is missing/future) in descending order
             jobData.sort((a, b) => {
                 const dateA = new Date(a["Job Date End"] && a["Job Date End"].toLowerCase() !== 'present' ? a["Job Date End"] : a["Job Date Start"]);
                 const dateB = new Date(b["Job Date End"] && b["Job Date End"].toLowerCase() !== 'present' ? b["Job Date End"] : b["Job Date Start"]);
@@ -290,7 +292,6 @@
                     </div>
                 `;
 
-                // Add event listeners for main job fields
                 jobDiv.querySelectorAll('input[data-field]').forEach(input => {
                     let timeout = null;
                     input.addEventListener('input', (e) => {
@@ -299,26 +300,27 @@
                         const field = e.target.dataset.field;
                         const value = e.target.value;
                         
-                        // Mark as editing to prevent re-render during input
                         currentEditingJobs.add(docId); 
 
                         timeout = setTimeout(async () => {
+                            const updatedJob = { ...job, [field]: value };
+                            const jobIndex = jobData.findIndex(item => item.id === job.id);
+                            if (jobIndex !== -1) {
+                                jobData[jobIndex] = updatedJob; // Update local data immediately
+                            }
                             await updateJobInFirestore(docId, { [field]: value });
-                            currentEditingJobs.delete(docId); // Remove from editing set
-                        }, 750); // Debounce time
+                            currentEditingJobs.delete(docId); 
+                        }, 750); 
                     });
                 });
 
-                // Add event listener for delete job button
                 jobDiv.querySelector('button[data-action="delete-job"]').addEventListener('click', () => {
                     deleteJobFromFirestore(job.id);
                 });
 
-                // Render subprojects
                 const subprojectsContainer = jobDiv.querySelector('[data-subprojects-container]');
                 renderSubprojects(job.id, job.projects || [], subprojectsContainer);
 
-                // Add event listener for adding subproject
                 jobDiv.querySelector('button[data-action="add-subproject"]').addEventListener('click', () => {
                     addSubprojectToJob(job.id);
                 });
@@ -328,14 +330,13 @@
         }
 
         function renderSubprojects(jobId, subprojects, containerElement) {
-            containerElement.innerHTML = ''; // Clear existing subprojects
+            containerElement.innerHTML = ''; 
 
             if (!subprojects || subprojects.length === 0) {
                 containerElement.innerHTML = '<p class="text-sm text-gray-600 text-center py-2">No subprojects yet. Click "Add Subproject / Role" below.</p>';
                 return;
             }
 
-            // Sort subprojects by end date (or start date) in descending order, latest first
             subprojects.sort((a, b) => {
                 const dateA = new Date(a.subprojectDateEnd && a.subprojectDateEnd.toLowerCase() !== 'present' ? a.subprojectDateEnd : a.subprojectDateStart);
                 const dateB = new Date(b.subprojectDateEnd && b.subprojectDateEnd.toLowerCase() !== 'present' ? b.subprojectDateEnd : b.subprojectDateStart);
@@ -343,11 +344,11 @@
             });
 
             subprojects.forEach((subproject, subIndex) => {
-                const subprojectId = subproject.id || `temp-${subIndex}-${Date.now()}`; // Use Firestore ID or temp ID
+                const subprojectId = subproject.id || `temp-${subIndex}-${Date.now()}`; 
                 
                 const subprojectDiv = document.createElement('div');
                 subprojectDiv.className = 'subproject-item';
-                subprojectDiv.dataset.subprojectId = subprojectId; // Use for identifying updates
+                subprojectDiv.dataset.subprojectId = subprojectId; 
 
                 subprojectDiv.innerHTML = `
                     <label class="col-span-2 text-sm font-medium text-gray-700">Subproject Name</label>
@@ -373,7 +374,6 @@
                     </div>
                 `;
 
-                // Add input event listeners for subproject fields
                 subprojectDiv.querySelectorAll('input[data-subfield], textarea[data-subfield]').forEach(input => {
                     let timeout = null;
                     input.addEventListener('input', (e) => {
@@ -381,31 +381,29 @@
                         const subField = e.target.dataset.subfield;
                         const value = e.target.value;
                         
-                        // Mark main job as editing
                         currentEditingJobs.add(jobId);
 
                         timeout = setTimeout(async () => {
-                            // Find the main job in jobData
                             const mainJobIndex = jobData.findIndex(j => j.id === jobId);
                             if (mainJobIndex !== -1) {
-                                // Find the subproject within the main job's projects array
                                 const currentProjects = [...(jobData[mainJobIndex].projects || [])];
-                                const subprojectToUpdateIndex = currentProjects.findIndex(sp => (sp.id === subprojectId) || (subprojectId.startsWith('temp-') && sp.subprojectName === subproject.subprojectName && sp.subprojectRole === subproject.subprojectRole)); // Basic fallback for temp IDs
+                                const subprojectToUpdateIndex = currentProjects.findIndex(sp => (sp.id === subprojectId) || (subprojectId.startsWith('temp-') && sp.subprojectName === subproject.subprojectName && sp.subprojectRole === subproject.subprojectRole)); 
 
                                 if (subprojectToUpdateIndex !== -1) {
                                     currentProjects[subprojectToUpdateIndex] = {
                                         ...currentProjects[subprojectToUpdateIndex],
                                         [subField]: value
                                     };
+                                    // Update local data
+                                    jobData[mainJobIndex].projects = currentProjects;
                                     await updateJobInFirestore(jobId, { projects: currentProjects });
                                 }
                             }
-                            currentEditingJobs.delete(jobId); // Remove from editing set
-                        }, 750); // Debounce time
+                            currentEditingJobs.delete(jobId); 
+                        }, 750); 
                     });
                 });
 
-                // Add delete subproject listener
                 subprojectDiv.querySelector('button[data-action="delete-subproject"]').addEventListener('click', () => {
                     deleteSubprojectFromJob(jobId, subprojectId);
                 });
@@ -430,9 +428,8 @@
                         subprojectDateStart: "",
                         subprojectDateEnd: ""
                     };
-                    // Ensure job has a 'projects' array, optionally with one default subproject
                     const jobWithProjects = { ...newJobData, projects: [defaultSubproject] }; 
-                    const docRef = await addDoc(colRef, jobWithProjects);
+                    await addDoc(colRef, jobWithProjects);
                     showMessage('New job experience added successfully!', 'success');
                 }
             } catch (e) {
@@ -444,25 +441,20 @@
         }
 
         async function updateJobInFirestore(docId, updates) {
-            // Check if this job is currently being edited to avoid re-rendering while typing
             if (currentEditingJobs.has(docId)) {
-                // console.log(`Skipping immediate render for ${docId} as it's being edited.`);
-                // We still want to send the update to Firestore, but delay the UI update.
             } else {
-                showLoading(); // Show loading only if not actively editing
+                showLoading(); 
             }
 
             try {
                 const colRef = getJobCollectionRef();
                 if (colRef) {
                     await setDoc(doc(colRef, docId), updates, { merge: true }); 
-                    // onSnapshot listener will handle re-rendering, so no direct renderTable() call here
                 }
             } catch (e) {
                 showMessage('Error updating job: ' + e.message, 'error');
                 console.error("Error updating document: ", e);
             } finally {
-                // If not actively editing, hide loading. If editing, it will be hidden by onSnapshot or after debounce.
                 if (!currentEditingJobs.has(docId)) { 
                     hideLoading();
                 }
@@ -485,15 +477,17 @@
             }
         }
 
-        // Function to add a new subproject to an existing job
         async function addSubprojectToJob(jobId) {
             showLoading();
             try {
-                const jobDocRef = doc(getJobCollectionRef(), jobId);
                 const currentJobDoc = jobData.find(job => job.id === jobId);
+                if (!currentJobDoc) {
+                    showMessage('Job not found to add subproject.', 'error');
+                    return;
+                }
 
                 const newSubproject = {
-                    id: crypto.randomUUID(), // Unique ID for the subproject
+                    id: crypto.randomUUID(), 
                     subprojectName: "New Subproject",
                     subprojectRole: "Role",
                     subprojectDescription: "",
@@ -513,7 +507,6 @@
             }
         }
 
-        // Function to delete a subproject from an existing job
         async function deleteSubprojectFromJob(jobId, subprojectId) {
             showLoading();
             try {
@@ -531,8 +524,6 @@
             }
         }
 
-
-        // Setup real-time listener for job data
         function setupFirestoreListener() {
             const colRef = getJobCollectionRef();
             if (colRef) {
@@ -543,12 +534,12 @@
                     });
                     jobData = newJobData; 
                     
-                    // Only re-render if no job is currently being edited
                     if (currentEditingJobs.size === 0) {
                         renderJobList(); 
                         showMessage('Job data synchronized with cloud.', 'info');
                     } else {
-                        // console.log("Skipping full re-render due to active editing.");
+                        // If editing, local data is already updated, avoid re-rendering to prevent cursor jumps
+                        // The onSnapshot will eventually trigger a full render once editing stops.
                     }
                     hideLoading();
                 }, (error) => {
@@ -562,39 +553,45 @@
             }
         }
 
+        // --- Authentication Logic ---
+        function handleAuthStateChange(user) {
+            if (user) {
+                userId = user.uid;
+                userIdDisplay.textContent = user.email || user.uid; // Show email if available
+                authButton.textContent = 'Log Out';
+                authButton.onclick = async () => {
+                    showLoading();
+                    try {
+                        await signOut(auth);
+                        window.location.href = 'login.html'; // Redirect to login after logout
+                    } catch (error) {
+                        showMessage('Logout failed: ' + error.message, 'error');
+                        console.error("Logout error:", error);
+                        hideLoading();
+                    }
+                };
+                console.log("User signed in:", userId);
+                setupFirestoreListener(); // Start listening to Firestore once authenticated
+            } else {
+                userId = null;
+                userIdDisplay.textContent = 'Not Logged In';
+                authButton.textContent = 'Log In';
+                authButton.onclick = () => {
+                    window.location.href = 'login.html'; // Redirect to login page
+                };
+                console.log("No user signed in. Redirecting to login.");
+                window.location.href = 'login.html'; // Redirect if not logged in
+            }
+            hideLoading();
+        }
+
         async function initializeFirebaseAndLoadData() {
             showLoading();
             try {
                 app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getFirestore(app);
-
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        userIdDisplay.textContent = userId;
-                        console.log("User signed in:", userId);
-                        setupFirestoreListener(); 
-                    } else {
-                        console.log("User not signed in. Attempting anonymous authentication...");
-                        userIdDisplay.textContent = 'Authenticating anonymously...';
-                        try {
-                            const anonymousUserCredential = await signInAnonymously(auth);
-                            userId = anonymousUserCredential.user.uid;
-                            userIdDisplay.textContent = userId;
-                            console.log("Signed in anonymously:", userId);
-                            setupFirestoreListener(); 
-                        } catch (error) {
-                            showMessage('Anonymous authentication failed: ' + error.message, 'error');
-                            console.error("Firebase authentication error:", error);
-                            userIdDisplay.textContent = 'Authentication Failed'; 
-                            hideLoading(); 
-                        }
-                    }
-                    if (userId) { 
-                        hideLoading();
-                    }
-                });
+                onAuthStateChanged(auth, handleAuthStateChange); // Set up auth listener
             } catch (error) {
                 showMessage('Error initializing Firebase: ' + error.message, 'error');
                 console.error("Firebase initialization error:", error);
@@ -604,7 +601,7 @@
 
         document.getElementById('addRowBtn').addEventListener('click', async () => {
             if (!userId) {
-                showMessage('Please wait for authentication to complete before adding data.', 'info');
+                showMessage('Please log in to add data.', 'info');
                 return;
             }
             const newJob = {
@@ -612,14 +609,14 @@
                 "Job Company": "Company Name",
                 "Job Date Start": "",
                 "Job Date End": "Present",
-                "projects": [] // Initialize with an empty projects array
+                "projects": [] 
             };
             await addJobToFirestore(newJob);
         });
 
         document.getElementById('saveBtn').addEventListener('click', async () => {
             if (!userId) {
-                showMessage('Please wait for authentication to complete before saving data.', 'info');
+                showMessage('Please log in to save data.', 'info');
                 return;
             }
             showLoading();
@@ -632,29 +629,23 @@
                         existingFirestoreDocsMap.set(doc.id, doc.data());
                     });
 
-                    // Update/add jobs from local jobData to Firestore
                     for (const job of jobData) {
-                        // Ensure all subprojects have unique IDs before saving.
-                        // This handles newly added subprojects which might have temp IDs.
                         const cleanedProjects = (job.projects || []).map(sp => ({
                             ...sp,
                             id: sp.id && !sp.id.startsWith('temp-') ? sp.id : crypto.randomUUID()
                         }));
 
                         const jobToSave = { ...job, projects: cleanedProjects };
-                        delete jobToSave.id; // Don't save the Firestore doc ID within the document itself
+                        delete jobToSave.id; 
 
                         if (job.id && existingFirestoreDocsMap.has(job.id)) {
-                            // If job has an ID and exists in Firestore, update it
                             await setDoc(doc(colRef, job.id), jobToSave, { merge: true });
                             existingFirestoreDocsMap.delete(job.id); 
                         } else {
-                            // If it's a new job (no ID or not in Firestore), add it
                             await addDoc(colRef, jobToSave);
                         }
                     }
 
-                    // Any remaining docs in existingFirestoreDocsMap should be deleted from Firestore
                     for (const docId of existingFirestoreDocsMap.keys()) {
                         await deleteDoc(doc(colRef, docId));
                     }

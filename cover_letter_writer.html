@@ -87,11 +87,12 @@
     </div>
 
     <div class="w-full bg-gray-800 p-4 shadow-md">
-        <nav class="container mx-auto flex justify-center space-x-8">
-            <a href="index.html" class="text-black hover:text-indigo-300 font-medium transition duration-300">Job Editor</a>
-            <a href="tailor.html" class="text-black hover:text-indigo-300 font-medium transition duration-300">Resume Tailor</a>
-            <a href="coverletter.html" class="text-black hover:text-indigo-300 font-medium transition duration-300">Cover Letters</a>
-            <a href="cover_letter_writer.html" class="text-black hover:text-indigo-300 font-medium transition duration-300">AI Cover Letter</a>
+        <nav class="container mx-auto flex justify-center space-x-8 items-center">
+            <a href="index.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Job Editor</a>
+            <a href="tailor.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Resume Tailor</a>
+            <a href="coverletter.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Cover Letters</a>
+            <a href="cover_letter_writer.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">AI Cover Letter</a>
+            <button id="authButton" class="btn bg-gray-600 text-white hover:bg-gray-500 ml-4">Loading...</button>
         </nav>
     </div>
 
@@ -116,7 +117,7 @@
     <script type="module">
         // Firebase imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
+        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
         // Your web app's Firebase configuration - MUST BE THE SAME AS YOUR OTHER PAGES
@@ -144,6 +145,7 @@
         const jobDescriptionInput = document.getElementById('jobDescriptionInput');
         const generatedCoverLetterOutput = document.getElementById('generatedCoverLetterOutput');
         const generateCoverLetterBtn = document.getElementById('generateCoverLetterBtn');
+        const authButton = document.getElementById('authButton'); // Get the auth button
 
         // --- Utility Functions ---
         function showLoading() {
@@ -204,6 +206,7 @@
                 console.error("Firestore DB or User ID not initialized.");
                 return null;
             }
+            // Use the authenticated user's UID for the collection path
             return collection(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/jobExperience`);
         }
 
@@ -212,6 +215,7 @@
                 console.error("Firestore DB or User ID not initialized.");
                 return null;
             }
+            // Use the authenticated user's UID for the collection path
             return collection(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/coverLetters`);
         }
 
@@ -222,57 +226,7 @@
                 auth = getAuth(app);
                 db = getFirestore(app);
 
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        userIdDisplay.textContent = userId;
-                        console.log("User signed in:", userId);
-
-                        await Promise.all([
-                            new Promise(resolve => onSnapshot(query(getJobCollectionRef()), (snapshot) => {
-                                jobData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                                console.log(`Loaded ${jobData.length} job experiences.`);
-                                resolve();
-                            }, (error) => { console.error("Error loading job experiences:", error); resolve(); })),
-                            new Promise(resolve => onSnapshot(query(getCoverLettersCollectionRef()), (snapshot) => {
-                                coverLettersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                                console.log(`Loaded ${coverLettersData.length} cover letters.`);
-                                resolve();
-                            }, (error) => { console.error("Error loading cover letters:", error); resolve(); }))
-                        ]);
-                        showMessage('All data synchronized with cloud.', 'info');
-                        hideLoading(); 
-                    } else {
-                        console.log("User not signed in. Attempting anonymous authentication...");
-                        userIdDisplay.textContent = 'Authenticating anonymously...';
-                        try {
-                            const anonymousUserCredential = await signInAnonymously(auth);
-                            userId = anonymousUserCredential.user.uid;
-                            userIdDisplay.textContent = userId;
-                            console.log("Signed in anonymously:", userId);
-                            
-                            await Promise.all([
-                                new Promise(resolve => onSnapshot(query(getJobCollectionRef()), (snapshot) => {
-                                    jobData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                                    console.log(`Loaded ${jobData.length} job experiences.`);
-                                    resolve();
-                                }, (error) => { console.error("Error loading job experiences:", error); resolve(); })),
-                                new Promise(resolve => onSnapshot(query(getCoverLettersCollectionRef()), (snapshot) => {
-                                    coverLettersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                                    console.log(`Loaded ${coverLettersData.length} cover letters.`);
-                                    resolve();
-                                }, (error) => { console.error("Error loading cover letters:", error); resolve(); }))
-                            ]);
-                            showMessage('All data synchronized with cloud.', 'success');
-                            hideLoading();
-                        } catch (error) {
-                            showMessage('Authentication failed: ' + error.message, 'error');
-                            console.error("Firebase authentication error:", error);
-                            userIdDisplay.textContent = 'Authentication Failed'; 
-                            hideLoading(); 
-                        }
-                    }
-                });
+                onAuthStateChanged(auth, handleAuthStateChange); 
             } catch (error) {
                 showMessage('Error initializing Firebase: ' + error.message, 'error');
                 console.error("Firebase initialization error:", error);
@@ -392,26 +346,19 @@
             if (topRelevantCoverLetters.length > 0) {
                 relevantCoverLettersString = "\n\n**Examples of Past Cover Letter Phrasing and Tone (for inspiration only):**\n";
                 topRelevantCoverLetters.forEach(item => {
-                    // To prevent explicit company/job title mentions from past cover letters,
-                    // we'll try to generalize some common patterns. This is a best effort.
                     let cleanedContent = item.cl.content;
-                    // Replace generic "at [Company]"
                     cleanedContent = cleanedContent.replace(/at\s+([A-Z][a-zA-Z\s]+?)(?=[\.\,\!\;\)])/g, 'at a relevant company');
-                    // Replace generic "[Role] at [Company]"
                     cleanedContent = cleanedContent.replace(/([A-Z][a-zA-Z\s]+?)\s+at\s+([A-Z][a-zA-Z\s]+?)(?=[\.\,\!\;\)])/g, 'a relevant role at a company');
-                    // Replace specific "Company Name" if it appears as a standalone entity
-                    // This is hard to do generically without a list of company names, but the prompt will emphasize
-                    // We'll rely more on the prompt for enforcement.
 
-                    relevantCoverLettersString += `- Title: "${item.cl.title}"\n  Snippet: ${cleanedContent.substring(0, 300)}...\n`; // Truncate for brevity
+                    relevantCoverLettersString += `- Title: "${item.cl.title}"\n  Snippet: ${cleanedContent.substring(0, 300)}...\n`; 
                 });
             }
 
             // --- 3. Construct LLM Prompt ---
             let prompt = `You are an expert career coach and cover letter writer. Your task is to draft a professional and compelling cover letter for a job application.`;
             prompt += `\n\n**Job Description:**\n${jobDescriptionRaw}`;
-            prompt += `\n\n${relevantExperienceString}`; // Directly include the experiences
-            prompt += `${relevantCoverLettersString}`; // Directly include past cover letter snippets
+            prompt += `\n\n${relevantExperienceString}`; 
+            prompt += `${relevantCoverLettersString}`; 
             
             prompt += `\n\n**Instructions for Drafting:**`;
             prompt += `\n- Draft a concise and impactful cover letter (around 3-4 paragraphs) that directly addresses the requirements of the job description.`;
@@ -421,11 +368,10 @@
             prompt += `\n- Focus on specific achievements and quantifiable results where possible from your background.`;
             prompt += `\n- Maintain a professional, confident, and enthusiastic tone. Display empathy and tones of leadership`;
             prompt += `\n- Do not just copy-paste text; synthesize and adapt it.`;
-			prompt += `\n- **For the introductory paragraph, lead with a strong statement about your experience, such as "I am an experienced project manager..." instead of phrases like "it is my express interest" or similar direct statements of interest.**`;
+            prompt += `\n- **For the introductory paragraph, lead with a strong statement about your experience, such as "I am an experienced project manager..." instead of phrases like "it is my express interest" or similar direct statements of interest.**`;
             prompt += `\n- **Ensure the sentence structure flows naturally and avoids overly dense or keyword-stuffed phrasing. Prioritize readability and clear communication over keyword repetition.**`;
             prompt += `\n- Start directly with the salutation "Dear Hiring Manager,".`;
             prompt += `\n- End with a professional closing.`;
-            
 
             // --- 4. Call LLM API ---
             try {
@@ -466,7 +412,6 @@
         // Event Listeners
         generateCoverLetterBtn.addEventListener('click', generateCoverLetter);
 
-        // Initialize Firebase and load data when the page loads
         window.onload = initializeFirebaseAndLoadData;
     </script>
 </body>

@@ -87,11 +87,12 @@
     </div>
 
     <div class="w-full bg-gray-800 p-4 shadow-md">
-        <nav class="container mx-auto flex justify-center space-x-8">
-            <a href="index.html" class="text-black hover:text-indigo-300 font-medium transition duration-300">Job Editor</a>
-            <a href="tailor.html" class="text-black hover:text-indigo-300 font-medium transition duration-300">Resume Tailor</a>
-            <a href="coverletter.html" class="text-black hover:text-indigo-300 font-medium transition duration-300">Cover Letters</a>
-            <a href="cover_letter_writer.html" class="text-black hover:text-indigo-300 font-medium transition duration-300">AI Cover Letter</a>
+        <nav class="container mx-auto flex justify-center space-x-8 items-center">
+            <a href="index.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Job Editor</a>
+            <a href="tailor.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Resume Tailor</a>
+            <a href="coverletter.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Cover Letters</a>
+            <a href="cover_letter_writer.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">AI Cover Letter</a>
+            <button id="authButton" class="btn bg-gray-600 text-white hover:bg-gray-500 ml-4">Loading...</button>
         </nav>
     </div>
 
@@ -116,7 +117,7 @@
     <script type="module">
         // Firebase imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
+        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
         // Your web app's Firebase configuration - MUST BE THE SAME AS YOUR OTHER PAGES
@@ -143,6 +144,7 @@
         const jobDescriptionInput = document.getElementById('jobDescriptionInput');
         const tailoredResumeOutput = document.getElementById('tailoredResumeOutput');
         const tailorResumeBtn = document.getElementById('tailorResumeBtn');
+        const authButton = document.getElementById('authButton'); // Get the auth button
 
         // --- Utility Functions ---
         function showLoading() {
@@ -203,7 +205,62 @@
                 console.error("Firestore DB or User ID not initialized.");
                 return null;
             }
+            // Use the authenticated user's UID for the collection path
             return collection(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/jobExperience`);
+        }
+
+        function setupFirestoreListener() {
+            const colRef = getJobCollectionRef();
+            if (colRef) {
+                onSnapshot(colRef, (snapshot) => {
+                    const newJobData = [];
+                    snapshot.forEach((doc) => {
+                        newJobData.push({ id: doc.id, ...doc.data() });
+                    });
+                    jobData = newJobData; 
+                    showMessage(`Loaded ${jobData.length} job experiences from Firestore.`, 'info');
+                    hideLoading();
+                }, (error) => {
+                    showMessage('Error fetching job experiences: ' + error.message, 'error');
+                    console.error("Error listening to Firestore: ", error);
+                    hideLoading();
+                });
+            } else {
+                showMessage('Firestore not ready. Please try refreshing.', 'error');
+                hideLoading();
+            }
+        }
+
+        // --- Authentication Logic ---
+        function handleAuthStateChange(user) {
+            if (user) {
+                userId = user.uid;
+                userIdDisplay.textContent = user.email || user.uid; 
+                authButton.textContent = 'Log Out';
+                authButton.onclick = async () => {
+                    showLoading();
+                    try {
+                        await signOut(auth);
+                        window.location.href = 'login.html'; 
+                    } catch (error) {
+                        showMessage('Logout failed: ' + error.message, 'error');
+                        console.error("Logout error:", error);
+                        hideLoading();
+                    }
+                };
+                console.log("User signed in:", userId);
+                setupFirestoreListener(); 
+            } else {
+                userId = null;
+                userIdDisplay.textContent = 'Not Logged In';
+                authButton.textContent = 'Log In';
+                authButton.onclick = () => {
+                    window.location.href = 'login.html'; 
+                };
+                console.log("No user signed in. Redirecting to login.");
+                window.location.href = 'login.html'; 
+            }
+            hideLoading();
         }
 
         async function initializeFirebaseAndLoadData() {
@@ -212,48 +269,7 @@
                 app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getFirestore(app);
-
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        userIdDisplay.textContent = userId;
-                        console.log("User signed in:", userId);
-                        onSnapshot(query(getJobCollectionRef()), (snapshot) => {
-                            jobData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                            console.log(`Loaded ${jobData.length} job experiences.`);
-                            showMessage(`Loaded ${jobData.length} job experiences from Firestore.`, 'info');
-                            hideLoading();
-                        }, (error) => {
-                            showMessage('Error fetching job experiences: ' + error.message, 'error');
-                            console.error("Error listening to Firestore: ", error);
-                            hideLoading();
-                        });
-                    } else {
-                        console.log("User not signed in. Attempting anonymous authentication...");
-                        userIdDisplay.textContent = 'Authenticating anonymously...';
-                        try {
-                            const anonymousUserCredential = await signInAnonymously(auth);
-                            userId = anonymousUserCredential.user.uid;
-                            userIdDisplay.textContent = userId;
-                            console.log("Signed in anonymously:", userId);
-                            onSnapshot(query(getJobCollectionRef()), (snapshot) => {
-                                jobData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                                console.log(`Loaded ${jobData.length} job experiences.`);
-                                showMessage(`Loaded ${jobData.length} job experiences from Firestore.`, 'success');
-                                hideLoading();
-                            }, (error) => {
-                                showMessage('Error fetching job experiences: ' + error.message, 'error');
-                                console.error("Error listening to Firestore: ", error);
-                                hideLoading();
-                            });
-                        } catch (error) {
-                            showMessage('Anonymous authentication failed: ' + error.message, 'error');
-                            console.error("Firebase authentication error:", error);
-                            userIdDisplay.textContent = 'Authentication Failed'; 
-                            hideLoading(); 
-                        }
-                    }
-                });
+                onAuthStateChanged(auth, handleAuthStateChange); 
             } catch (error) {
                 showMessage('Error initializing Firebase: ' + error.message, 'error');
                 console.error("Firebase initialization error:", error);
@@ -317,7 +333,7 @@
                 }
             });
             scoredJobData.sort((a, b) => b.score - a.score); 
-            const topRelevantJobs = scoredJobData.slice(0, 3); // Top 3 relevant jobs for the AI
+            const topRelevantJobs = scoredJobData.slice(0, 3); 
 
             let relevantExperienceString = '';
             if (topRelevantJobs.length > 0) {
