@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Settings</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: "Inter", sans-serif;
+            background-color: #f0f2f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 1.5rem;
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"],
+        input[type="url"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+        }
+        input[type="checkbox"] {
+            margin-right: 0.5rem;
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, box-shadow 0.2s;
+        }
+        .btn-primary {
+            background-color: #4f46e5;
+            color: white;
+            box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+        }
+        .btn-primary:hover {
+            background-color: #4338ca;
+            box-shadow: 0 4px 8px rgba(79, 70, 229, 0.3);
+        }
+        .message-box {
+            background-color: #e0f2fe;
+            border: 1px solid #90cdf4;
+            color: #2b6cb0;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #4f46e5;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-6">
+    <div id="loading" class="loading-overlay hidden">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="w-full bg-gray-800 p-4 shadow-md">
+        <nav class="mx-auto flex justify-center space-x-8 items-center max-w-full">
+            <a href="index.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Job Editor</a>
+            <a href="tailor.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Resume Tailor</a>
+            <a href="coverletter.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Cover Letters</a>
+            <a href="cover_letter_writer.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">AI Cover Letter</a>
+            <button id="authButton" class="btn bg-gray-600 text-white hover:bg-gray-500 ml-4">Loading...</button>
+        </nav>
+    </div>
+
+    <div class="container">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">User Settings</h1>
+
+        <p class="text-sm text-gray-600 mb-4 text-center">Your User ID: <span id="userIdDisplay" class="font-semibold text-gray-800">Loading...</span></p>
+
+        <div id="message-box" class="hidden message-box mb-4" role="alert">
+            <span id="message-content"></span>
+        </div>
+
+        <button id="saveProfileBtnTop" class="btn btn-primary mb-6 w-full">Save Changes</button>
+
+        <form id="userProfileForm">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="firstName" class="block text-sm font-medium text-gray-700">First Name <span class="text-red-500">*</span></label>
+                    <input type="text" id="firstName" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" maxlength="50" required>
+                </div>
+                <div>
+                    <label for="lastName" class="block text-sm font-medium text-gray-700">Last Name <span class="text-red-500">*</span></label>
+                    <input type="text" id="lastName" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" maxlength="50" required>
+                </div>
+                <div class="md:col-span-2">
+                    <label for="emailAddress" class="block text-sm font-medium text-gray-700">Email Address <span class="text-red-500">*</span></label>
+                    <input type="email" id="emailAddress" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" maxlength="100" required pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$" title="Please enter a valid email address">
+                </div>
+                <div>
+                    <label for="landlinePhoneNumber" class="block text-sm font-medium text-gray-700">Landline Phone Number</label>
+                    <input type="tel" id="landlinePhoneNumber" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" maxlength="20">
+                </div>
+                <div>
+                    <label for="cellPhoneNumber" class="block text-sm font-medium text-gray-700">Cell Phone Number</label>
+                    <input type="tel" id="cellPhoneNumber" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" maxlength="20">
+                </div>
+                <div class="md:col-span-2 flex items-center mb-4">
+                    <input type="checkbox" id="canTextCellPhoneNumber" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                    <label for="canTextCellPhoneNumber" class="ml-2 block text-sm text-gray-900">Can we text the Cell Phone Number?</label>
+                </div>
+                <div class="md:col-span-2">
+                    <label for="linkedinURL" class="block text-sm font-medium text-gray-700">LinkedIn URL</label>
+                    <input type="url" id="linkedinURL" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" maxlength="300">
+                </div>
+                <div class="md:col-span-2">
+                    <label for="portfolioWebsite" class="block text-sm font-medium text-gray-700">Portfolio Website</label>
+                    <input type="url" id="portfolioWebsite" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" maxlength="300">
+                </div>
+                <div class="md:col-span-2">
+                    <label for="githubURL" class="block text-sm font-medium text-gray-700">Github URL</label>
+                    <input type="url" id="githubURL" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" maxlength="300">
+                </div>
+            </div>
+        </form>
+
+        <button id="saveProfileBtnBottom" class="btn btn-primary mt-6 w-full">Save Changes</button>
+    </div>
+
+    <script type="module">
+        // Firebase imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+
+        // Your web app's Firebase configuration - MUST BE THE SAME AS YOUR OTHER PAGES
+        const firebaseConfig = {
+            apiKey: "AIzaSyDwkW-MVF3aKqI-F-xGP0XA1uvcsPeanSo",
+            authDomain: "jobdata-c7f32.firebaseapp.com",
+            projectId: "jobdata-c7f32",
+            storageBucket: "jobdata-c7f32.firebasestorage.app",
+            messagingSenderId: "534346265582",
+            appId: "1:534346265582:web:40af2358628940ced154ff"
+        };
+
+        const APP_ID_FOR_HEROKU = firebaseConfig.projectId; 
+
+        // Firebase instances
+        let app;
+        let db;
+        let auth;
+        let userId = null; 
+
+        // Element references
+        const loadingOverlay = document.getElementById('loading');
+        const userIdDisplay = document.getElementById('userIdDisplay');
+        const authButton = document.getElementById('authButton');
+        const messageBox = document.getElementById('message-box');
+        const messageContent = document.getElementById('message-content');
+
+        const firstNameInput = document.getElementById('firstName');
+        const lastNameInput = document.getElementById('lastName');
+        const emailAddressInput = document.getElementById('emailAddress');
+        const landlinePhoneNumberInput = document.getElementById('landlinePhoneNumber');
+        const cellPhoneNumberInput = document.getElementById('cellPhoneNumber');
+        const canTextCellPhoneNumberCheckbox = document.getElementById('canTextCellPhoneNumber');
+        const linkedinURLInput = document.getElementById('linkedinURL');
+        const portfolioWebsiteInput = document.getElementById('portfolioWebsite');
+        const githubURLInput = document.getElementById('githubURL');
+        const saveProfileBtnTop = document.getElementById('saveProfileBtnTop');
+        const saveProfileBtnBottom = document.getElementById('saveProfileBtnBottom');
+
+        // --- Utility Functions ---
+        function showLoading() {
+            loadingOverlay.classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            loadingOverlay.classList.add('hidden');
+        }
+
+        function showMessage(message, type = 'info') {
+            messageContent.textContent = message;
+            messageBox.classList.remove('hidden', 'bg-blue-100', 'bg-green-100', 'bg-red-100', 'border-blue-400', 'border-green-400', 'border-red-400', 'text-blue-700', 'text-green-700', 'text-red-700');
+
+            if (type === 'success') {
+                messageBox.classList.add('bg-green-100', 'border-green-400', 'text-green-700');
+            } else if (type === 'error') {
+                messageBox.classList.add('bg-red-100', 'border-red-400', 'text-red-700');
+            } else { // info
+                messageBox.classList.add('bg-blue-100', 'border-blue-400', 'text-blue-700');
+            }
+            messageBox.classList.remove('hidden');
+            setTimeout(() => {
+                messageBox.classList.add('hidden'); 
+            }, 5000);
+        }
+
+        // --- Authentication Logic ---
+        function handleAuthStateChange(user) {
+            if (user) {
+                userId = user.uid;
+                userIdDisplay.textContent = user.email || user.uid; 
+                authButton.textContent = 'Log Out';
+                authButton.onclick = async () => {
+                    showLoading();
+                    try {
+                        await signOut(auth);
+                        window.location.href = 'login.html'; 
+                    } catch (error) {
+                        showMessage('Logout failed: ' + error.message, 'error');
+                        console.error("Logout error:", error);
+                        hideLoading();
+                    }
+                };
+                console.log("User signed in:", userId);
+                loadUserProfileData(); // Load profile data once authenticated
+            } else {
+                userId = null;
+                userIdDisplay.textContent = 'Not Logged In';
+                authButton.textContent = 'Log In';
+                authButton.onclick = () => {
+                    window.location.href = 'login.html'; 
+                };
+                console.log("No user signed in. Redirecting to login.");
+                window.location.href = 'login.html'; 
+            }
+            hideLoading();
+        }
+
+        // --- Firebase Initialization ---
+        async function initializeFirebase() {
+            showLoading();
+            try {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                onAuthStateChanged(auth, handleAuthStateChange); 
+            } catch (error) {
+                showMessage('Error initializing Firebase: ' + error.message, 'error');
+                console.error("Firebase initialization error:", error);
+                hideLoading();
+            }
+        }
+
+        // --- User Profile Data Handling ---
+        function getUserProfileDocRef() {
+            if (!db || !userId) {
+                console.error("Firestore DB or User ID not initialized.");
+                return null;
+            }
+            return doc(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/userProfile/profile`);
+        }
+
+        async function loadUserProfileData() {
+            showLoading();
+            try {
+                const profileDocRef = getUserProfileDocRef();
+                if (!profileDocRef) {
+                    showMessage('Cannot load profile: Firebase not ready.', 'error');
+                    hideLoading();
+                    return;
+                }
+
+                const docSnap = await getDoc(profileDocRef);
+
+                const defaultProfileData = {
+                    firstName: "",
+                    lastName: "",
+                    emailAddress: auth.currentUser ? auth.currentUser.email : "", // Pre-fill with Google email if available
+                    landlinePhoneNumber: "",
+                    cellPhoneNumber: "",
+                    canTextCellPhoneNumber: false,
+                    linkedinURL: "",
+                    portfolioWebsite: "",
+                    githubURL: ""
+                };
+
+                let profileData = defaultProfileData;
+
+                if (docSnap.exists()) {
+                    profileData = { ...defaultProfileData, ...docSnap.data() }; // Merge to ensure all fields are present
+                } else {
+                    // Document doesn't exist, create it with default blank fields
+                    await setDoc(profileDocRef, defaultProfileData);
+                    showMessage('New user profile created with default blank fields.', 'info');
+                }
+
+                // Populate UI fields
+                firstNameInput.value = profileData.firstName || '';
+                lastNameInput.value = profileData.lastName || '';
+                emailAddressInput.value = profileData.emailAddress || '';
+                landlinePhoneNumberInput.value = profileData.landlinePhoneNumber || '';
+                cellPhoneNumberInput.value = profileData.cellPhoneNumber || '';
+                canTextCellPhoneNumberCheckbox.checked = profileData.canTextCellPhoneNumber || false;
+                linkedinURLInput.value = profileData.linkedinURL || '';
+                portfolioWebsiteInput.value = profileData.portfolioWebsite || '';
+                githubURLInput.value = profileData.githubURL || '';
+
+                showMessage('User profile loaded.', 'success');
+
+            } catch (e) {
+                showMessage('Error loading user profile: ' + e.message, 'error');
+                console.error("Error loading profile: ", e);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function saveUserProfileData() {
+            if (!userId) {
+                showMessage('Please log in to save your profile.', 'info');
+                return;
+            }
+
+            showLoading();
+            try {
+                const profileDocRef = getUserProfileDocRef();
+                if (!profileDocRef) {
+                    showMessage('Cannot save profile: Firebase not ready.', 'error');
+                    hideLoading();
+                    return;
+                }
+
+                // Gather data from inputs
+                const firstName = firstNameInput.value.trim();
+                const lastName = lastNameInput.value.trim();
+                const emailAddress = emailAddressInput.value.trim();
+                const landlinePhoneNumber = landlinePhoneNumberInput.value.trim();
+                const cellPhoneNumber = cellPhoneNumberInput.value.trim();
+                const canTextCellPhoneNumber = canTextCellPhoneNumberCheckbox.checked;
+                const linkedinURL = linkedinURLInput.value.trim();
+                const portfolioWebsite = portfolioWebsiteInput.value.trim();
+                const githubURL = githubURLInput.value.trim();
+
+                // Client-side Validation
+                if (!firstName || !lastName || !emailAddress) {
+                    showMessage('First Name, Last Name, and Email Address are required.', 'error');
+                    hideLoading();
+                    return;
+                }
+
+                const emailRegex = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i;
+                if (!emailRegex.test(emailAddress)) {
+                    showMessage('Please enter a valid email address format.', 'error');
+                    hideLoading();
+                    return;
+                }
+
+                const profileData = {
+                    firstName,
+                    lastName,
+                    emailAddress,
+                    landlinePhoneNumber,
+                    cellPhoneNumber,
+                    canTextCellPhoneNumber,
+                    linkedinURL,
+                    portfolioWebsite,
+                    githubURL
+                };
+
+                await setDoc(profileDocRef, profileData, { merge: true });
+                showMessage('User profile saved successfully!', 'success');
+
+            } catch (e) {
+                showMessage('Error saving user profile: ' + e.message, 'error');
+                console.error("Error saving profile: ", e);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Event Listeners
+        saveProfileBtnTop.addEventListener('click', saveUserProfileData);
+        saveProfileBtnBottom.addEventListener('click', saveUserProfileData);
+
+        window.onload = initializeFirebase;
+    </script>
+</body>
+</html>
