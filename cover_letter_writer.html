@@ -87,7 +87,7 @@
     </div>
 
     <div class="w-full bg-gray-800 p-4 shadow-md">
-        <nav class="container mx-auto flex justify-center space-x-8 items-center">
+        <nav class="mx-auto flex justify-center space-x-8 items-center max-w-full">
             <a href="index.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Job Editor</a>
             <a href="tailor.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Resume Tailor</a>
             <a href="coverletter.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Cover Letters</a>
@@ -200,13 +200,47 @@
                        .filter(word => word.length > 2 && !stopwords.has(word)); 
         }
 
+        // --- Authentication Logic ---
+        // Moved this function definition BEFORE initializeFirebaseAndLoadData
+        function handleAuthStateChange(user) {
+            if (user) {
+                userId = user.uid;
+                userIdDisplay.textContent = user.email || user.uid; 
+                authButton.textContent = 'Log Out';
+                authButton.onclick = async () => {
+                    showLoading();
+                    try {
+                        await signOut(auth);
+                        window.location.href = 'login.html'; 
+                    } catch (error) {
+                        showMessage('Logout failed: ' + error.message, 'error');
+                        console.error("Logout error:", error);
+                        hideLoading();
+                    }
+                };
+                console.log("User signed in:", userId);
+                // Now that userId is set, proceed to setup Firestore listeners
+                setupJobDataListener();
+                setupCoverLettersListener();
+            } else {
+                userId = null;
+                userIdDisplay.textContent = 'Not Logged In';
+                authButton.textContent = 'Log In';
+                authButton.onclick = () => {
+                    window.location.href = 'login.html'; 
+                };
+                console.log("No user signed in. Redirecting to login.");
+                window.location.href = 'login.html'; 
+            }
+            hideLoading();
+        }
+
         // --- Firebase Initialization and Data Loading ---
         function getJobCollectionRef() {
             if (!db || !userId) {
                 console.error("Firestore DB or User ID not initialized.");
                 return null;
             }
-            // Use the authenticated user's UID for the collection path
             return collection(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/jobExperience`);
         }
 
@@ -215,9 +249,41 @@
                 console.error("Firestore DB or User ID not initialized.");
                 return null;
             }
-            // Use the authenticated user's UID for the collection path
             return collection(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/coverLetters`);
         }
+
+        function setupJobDataListener() {
+            const colRef = getJobCollectionRef();
+            if (colRef) {
+                onSnapshot(query(colRef), (snapshot) => {
+                    jobData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    console.log(`Loaded ${jobData.length} job experiences.`);
+                    showMessage('Job data synchronized with cloud.', 'info');
+                }, (error) => {
+                    showMessage('Error fetching job experiences: ' + error.message, 'error');
+                    console.error("Error listening to job experiences: ", error);
+                });
+            } else {
+                showMessage('Job data Firestore not ready.', 'error');
+            }
+        }
+
+        function setupCoverLettersListener() {
+            const colRef = getCoverLettersCollectionRef();
+            if (colRef) {
+                onSnapshot(query(colRef), (snapshot) => {
+                    coverLettersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    console.log(`Loaded ${coverLettersData.length} cover letters.`);
+                    showMessage('Cover letter data synchronized with cloud.', 'info');
+                }, (error) => {
+                    showMessage('Error fetching cover letters: ' + error.message, 'error');
+                    console.error("Error listening to cover letters: ", error);
+                });
+            } else {
+                showMessage('Cover letter Firestore not ready.', 'error');
+            }
+        }
+
 
         async function initializeFirebaseAndLoadData() {
             showLoading(); 
@@ -225,7 +291,7 @@
                 app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getFirestore(app);
-
+                // Now handleAuthStateChange is defined when this is called
                 onAuthStateChanged(auth, handleAuthStateChange); 
             } catch (error) {
                 showMessage('Error initializing Firebase: ' + error.message, 'error');
