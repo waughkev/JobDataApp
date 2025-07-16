@@ -87,7 +87,7 @@
     </div>
 
     <div class="w-full bg-gray-800 p-4 shadow-md">
-        <nav class="container mx-auto flex justify-center space-x-8 items-center">
+        <nav class="mx-auto flex justify-center space-x-8 items-center max-w-full">
             <a href="index.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Job Editor</a>
             <a href="tailor.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Resume Tailor</a>
             <a href="coverletter.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Cover Letters</a>
@@ -199,38 +199,6 @@
                        .filter(word => word.length > 2 && !stopwords.has(word)); 
         }
 
-        // --- Firebase Initialization and Data Loading ---
-        function getJobCollectionRef() {
-            if (!db || !userId) {
-                console.error("Firestore DB or User ID not initialized.");
-                return null;
-            }
-            // Use the authenticated user's UID for the collection path
-            return collection(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/jobExperience`);
-        }
-
-        function setupFirestoreListener() {
-            const colRef = getJobCollectionRef();
-            if (colRef) {
-                onSnapshot(colRef, (snapshot) => {
-                    const newJobData = [];
-                    snapshot.forEach((doc) => {
-                        newJobData.push({ id: doc.id, ...doc.data() });
-                    });
-                    jobData = newJobData; 
-                    showMessage(`Loaded ${jobData.length} job experiences from Firestore.`, 'info');
-                    hideLoading();
-                }, (error) => {
-                    showMessage('Error fetching job experiences: ' + error.message, 'error');
-                    console.error("Error listening to Firestore: ", error);
-                    hideLoading();
-                });
-            } else {
-                showMessage('Firestore not ready. Please try refreshing.', 'error');
-                hideLoading();
-            }
-        }
-
         // --- Authentication Logic ---
         function handleAuthStateChange(user) {
             if (user) {
@@ -261,6 +229,38 @@
                 window.location.href = 'login.html'; 
             }
             hideLoading();
+        }
+
+        // --- Firebase Initialization and Data Loading ---
+        function getJobCollectionRef() {
+            if (!db || !userId) {
+                console.error("Firestore DB or User ID not initialized.");
+                return null;
+            }
+            // Use the authenticated user's UID for the collection path
+            return collection(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/jobExperience`);
+        }
+
+        function setupFirestoreListener() {
+            const colRef = getJobCollectionRef();
+            if (colRef) {
+                onSnapshot(colRef, (snapshot) => {
+                    const newJobData = [];
+                    snapshot.forEach((doc) => {
+                        newJobData.push({ id: doc.id, ...doc.data() });
+                    });
+                    jobData = newJobData; 
+                    showMessage(`Loaded ${jobData.length} job experiences from Firestore.`, 'info');
+                    hideLoading();
+                }, (error) => {
+                    showMessage('Error fetching job experiences: ' + error.message, 'error');
+                    console.error("Error listening to Firestore: ", error);
+                    hideLoading();
+                });
+            } else {
+                showMessage('Firestore not ready. Please try refreshing.', 'error');
+                hideLoading();
+            }
         }
 
         async function initializeFirebaseAndLoadData() {
