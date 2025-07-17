@@ -576,7 +576,7 @@
                     const editIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
                     editIcon.setAttribute("viewBox", "0 0 20 20");
                     editIcon.setAttribute("fill", "currentColor");
-                    editIcon.className = "w-5 h-5 prompt-action-icon";
+                    editIcon.setAttribute("class", "w-5 h-5 prompt-action-icon"); 
                     editIcon.dataset.action = 'edit-prompt';
                     editIcon.dataset.promptId = prompt.id;
                     editIcon.innerHTML = `<path d="M5.433 13.917l-1.567.882a1.5 1.5 0 0 0-.882 1.567l.249 1.472c.125.737.697 1.299 1.434 1.424l1.472.249a1.5 1.5 0 0 0 1.567-.882l.882-1.567m4.905-2.72L18.62 3.081a1.5 1.5 0 0 0-2.121-2.121L12.112 9.172m-4.224 0L1.879 15.621c-.482.482-.97.027-1.121-.121L.379 14.224a1.5 1.5 0 0 1-.121-1.121l6.543-6.543Z" />`;
@@ -586,7 +586,7 @@
                     const deleteIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
                     deleteIcon.setAttribute("viewBox", "0 0 20 20");
                     deleteIcon.setAttribute("fill", "currentColor");
-                    deleteIcon.className = "w-5 h-5 prompt-action-icon text-red-500 hover:text-red-700";
+                    deleteIcon.setAttribute("class", "w-5 h-5 prompt-action-icon text-red-500 hover:text-red-700"); 
                     deleteIcon.dataset.action = 'delete-prompt';
                     deleteIcon.dataset.promptId = prompt.id;
                     deleteIcon.innerHTML = `<path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.594 19h4.812a2.75 2.75 0 0 0 2.742-2.536l.841-10.518.148.022a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.35 7.01a.75.75 0 1 0 1.5-.06l-.35-7.01Zm3.42-.06a.75.75 0 0 0-1.5.06l-.35 7.01a.75.75 0 0 0 1.5.06l.35-7.01Z" clip-rule="evenodd" />`;
@@ -679,7 +679,7 @@
                 if (editHistoryColRef) {
                     await addDoc(editHistoryColRef, {
                         promptId: promptId,
-                        priorPromptText: oldPromptText,
+                        priorPromptText: oldText,
                         updatedPromptText: newText,
                         editedAt: serverTimestamp()
                     });
@@ -728,6 +728,7 @@
                     showMessage('New prompt added successfully!', 'success');
                     newPromptInput.value = ''; // Clear input
                     charCountSpan.textContent = '0'; // Reset char count
+                    renderPrompts(); // <--- ADDED: Re-render to show the new prompt immediately
                 }
             } catch (e) {
                 showMessage('Error adding prompt: ' + e.message, 'error');
