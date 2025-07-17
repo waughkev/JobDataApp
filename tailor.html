@@ -969,7 +969,7 @@
                 const chatHistoryATS = [];
                 chatHistoryATS.push({ role: "user", parts: [{ text: promptForATSReview }] });
                 const payloadATS = { contents: chatHistoryATS };
-                const apiKey = "YOUR_GOOGLE_CLOUD_API_KEY_HERE"; 
+                const apiKey = "AIzaSyDwkW-MVF3aKqI-F-xGP0XA1uvcsPeanSo"; 
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                 const responseATS = await fetch(apiUrl, {
