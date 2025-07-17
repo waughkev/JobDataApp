@@ -79,6 +79,129 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+        /* Styles for Prompts Section (JD-004) */
+        .collapsible-header {
+            background-color: #e2e8f0;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 1rem;
+            transition: background-color 0.2s;
+        }
+        .collapsible-header:hover {
+            background-color: #cbd5e0;
+        }
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            padding: 0 1rem; /* Add padding here, it will be visible when expanded */
+        }
+        .collapsible-content.expanded {
+            max-height: 1000px; /* Adjust as needed, should be larger than max content */
+            transition: max-height 0.5s ease-in;
+            padding-bottom: 1rem;
+        }
+        .collapsible-header svg {
+            transition: transform 0.3s ease-out;
+        }
+        .collapsible-header.expanded svg {
+            transform: rotate(180deg);
+        }
+
+        .prompt-item {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+        .prompt-item:last-child {
+            border-bottom: none;
+        }
+        .prompt-item .prompt-text {
+            flex-grow: 1;
+            margin-left: 0.75rem;
+            color: #4a5568;
+            word-break: break-word; /* Ensure long words wrap */
+        }
+        .prompt-item .prompt-text.disabled {
+            text-decoration: line-through;
+            color: #a0aec0;
+        }
+        .prompt-item .prompt-text.editable {
+            border: 1px solid #a0aec0;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            background-color: #f7fafc;
+        }
+        .prompt-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-left: 1rem;
+        }
+        .prompt-action-icon {
+            cursor: pointer;
+            color: #64748b;
+            transition: color 0.2s;
+        }
+        .prompt-action-icon:hover {
+            color: #475569;
+        }
+
+        /* Toggle Switch Styling */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 38px; /* Adjusted width */
+            height: 22px; /* Adjusted height */
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 22px; /* Half of height for roundness */
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px; /* Adjusted size */
+            width: 16px; /* Adjusted size */
+            left: 3px; /* Adjusted position */
+            bottom: 3px; /* Adjusted position */
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .toggle-slider {
+            background-color: #4f46e5;
+        }
+        input:focus + .toggle-slider {
+            box-shadow: 0 0 1px #4f46e5;
+        }
+        input:checked + .toggle-slider:before {
+            -webkit-transform: translateX(16px); /* Adjusted translation */
+            -ms-transform: translateX(16px); /* Adjusted translation */
+            transform: translateX(16px); /* Adjusted translation */
+        }
     </style>
 </head>
 <body class="bg-gray-100 p-6">
@@ -87,12 +210,21 @@
     </div>
 
     <div class="w-full bg-gray-800 p-4 shadow-md">
-        <nav class="mx-auto flex justify-center space-x-8 items-center max-w-full">
-            <a href="index.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Job Editor</a>
-            <a href="tailor.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Resume Tailor</a>
-            <a href="coverletter.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Cover Letters</a>
-            <a href="cover_letter_writer.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">AI Cover Letter</a>
-            <button id="authButton" class="btn bg-gray-600 text-white hover:bg-gray-500 ml-4">Loading...</button>
+        <nav class="mx-auto flex justify-between items-center max-w-full px-4">
+            <div class="flex space-x-8">
+                <a href="index.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Job Editor</a>
+                <a href="tailor.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Resume Tailor</a>
+                <a href="coverletter.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Cover Letters</a>
+                <a href="cover_letter_writer.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">AI Cover Letter</a>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="authButton" class="btn bg-gray-600 text-white hover:bg-gray-500">Loading...</button>
+                <a href="user_settings.html" class="text-white hover:text-indigo-300 transition duration-300" title="User Settings">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                        <path fill-rule="evenodd" d="M11.078 2.25c-.917 0-1.699.663-1.85 1.567L9.05 4.889c-1.407.419-2.653 1.144-3.692 2.042l-1.32-.792a1.875 1.875 0 0 0-2.418.969L1.376 10.56c-.406.954.103 2.016 1.153 2.46l1.32.59a8.246 8.246 0 0 1 2.199.787l.165 1.48c.165.917.947 1.567 1.85 1.567h2.004c.917 0 1.699-.663 1.85-1.567l.165-1.48a8.23 8.23 0 0 1 2.199-.787l1.32-.59c1.05-.445 1.559-1.507 1.153-2.46l-.65-1.516a1.875 1.875 0 0 0-2.418-.969l-1.32.792a8.23 8.23 0 0 1-3.692-2.042l-.165-1.486A1.875 1.875 0 0 0 11.078 2.25ZM10.5 11.25a1.5 1.5 0 1 0 3 0 1.5 1.5 0 0 0-3 0Z" clip-rule="evenodd" />
+                    </svg>
+                </a>
+            </div>
         </nav>
     </div>
 
@@ -108,6 +240,38 @@
         <h2 class="text-xl font-semibold text-gray-700 mb-3">Job Description:</h2>
         <textarea id="jobDescriptionInput" placeholder="Paste the full job description here. Use **double asterisks** for important keywords (e.g., **project management**, **Agile**)." class="mb-4"></textarea>
 
+        <!-- AI Prompts Section (JD-004) -->
+        <div class="ai-prompts-section mb-6">
+            <div class="collapsible-header" id="promptsCollapsibleHeader">
+                <span>AI Prompts</span>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+                    <path fill-rule="evenodd" d="M10 3a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 3ZM10 16.25a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 1 1.5 0v4.5a.75.75 0 0 1-.75.75ZM12.75 10a.75.75 0 0 0-.75-.75H4.5a.75.75 0 0 0 0 1.5h7.5a.75.75 0 0 0 .75-.75ZM15.5 10a.75.75 0 0 0-.75-.75h-2.5a.75.75 0 0 0 0 1.5h2.5a.75.75 0 0 0 .75-.75Z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <div class="collapsible-content expanded" id="promptsCollapsibleContent">
+                <div class="flex items-center mb-4">
+                    <label class="toggle-switch mr-3">
+                        <input type="checkbox" id="masterPromptToggle" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="text-gray-700 font-medium">Enable/Disable All Prompts</span>
+                </div>
+
+                <div class="mb-4">
+                    <label for="newPromptInput" class="block text-sm font-medium text-gray-700 mb-2">Add New Prompt:</label>
+                    <textarea id="newPromptInput" class="w-full p-2 border rounded-md shadow-sm" rows="2" maxlength="400" placeholder="Enter new custom prompt (400 character limit)"></textarea>
+                    <p class="text-right text-xs text-gray-500"><span id="charCount">0</span>/400 characters</p>
+                    <button id="addNewPromptBtn" class="btn btn-primary mt-2 text-sm">Add Prompt</button>
+                </div>
+
+                <div id="promptList" class="border rounded-md p-3 bg-gray-50">
+                    <p class="text-center text-gray-500 py-2">Loading prompts...</p>
+                    <!-- Prompts will be rendered here by JavaScript -->
+                </div>
+            </div>
+        </div>
+        <!-- End AI Prompts Section -->
+
         <button id="generateCoverLetterBtn" class="btn btn-primary mb-6">Generate Cover Letter Draft</button>
 
         <h2 class="text-xl font-semibold text-gray-700 mb-3">Generated Cover Letter Draft:</h2>
@@ -118,7 +282,7 @@
         // Firebase imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
         import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, query, addDoc, doc, setDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
         // Your web app's Firebase configuration - MUST BE THE SAME AS YOUR OTHER PAGES
         const firebaseConfig = {
@@ -137,15 +301,36 @@
         let db;
         let auth;
         let userId = null; 
+
         let jobData = []; 
         let coverLettersData = []; 
+        let userPrompts = []; // Stores prompts from Firestore
+        let promptStates = {}; // Client-side state for enabled/disabled prompts { promptId: boolean }
+
+        // Hardcoded default prompts
+        const defaultPrompts = [
+            { id: 'default-1', text: 'Emphasize my project management skills and experience with Agile methodologies.', type: 'default' },
+            { id: 'default-2', text: 'Highlight my leadership experience and ability to build and motivate teams.', type: 'default' },
+            { id: 'default-3', text: 'Focus on quantifiable achievements and results from my past roles.', type: 'default' },
+            { id: 'default-4', text: 'Ensure the tone is professional, confident, and enthusiastic.', type: 'default' },
+            { id: 'default-5', text: 'Connect my experience directly to the key requirements listed in the job description.', type: 'default' }
+        ];
 
         const loadingOverlay = document.getElementById('loading');
         const userIdDisplay = document.getElementById('userIdDisplay');
         const jobDescriptionInput = document.getElementById('jobDescriptionInput');
         const generatedCoverLetterOutput = document.getElementById('generatedCoverLetterOutput');
         const generateCoverLetterBtn = document.getElementById('generateCoverLetterBtn');
-        const authButton = document.getElementById('authButton'); // Get the auth button
+        const authButton = document.getElementById('authButton'); 
+
+        // JD-004 new elements
+        const promptsCollapsibleHeader = document.getElementById('promptsCollapsibleHeader');
+        const promptsCollapsibleContent = document.getElementById('promptsCollapsibleContent');
+        const masterPromptToggle = document.getElementById('masterPromptToggle');
+        const newPromptInput = document.getElementById('newPromptInput');
+        const charCountSpan = document.getElementById('charCount');
+        const addNewPromptBtn = document.getElementById('addNewPromptBtn');
+        const promptListContainer = document.getElementById('promptList');
 
         // --- Utility Functions ---
         function showLoading() {
@@ -201,7 +386,6 @@
         }
 
         // --- Authentication Logic ---
-        // Moved this function definition BEFORE initializeFirebaseAndLoadData
         function handleAuthStateChange(user) {
             if (user) {
                 userId = user.uid;
@@ -219,9 +403,9 @@
                     }
                 };
                 console.log("User signed in:", userId);
-                // Now that userId is set, proceed to setup Firestore listeners
                 setupJobDataListener();
                 setupCoverLettersListener();
+                setupUserPromptsListener(); // JD-004: Start listening for user prompts
             } else {
                 userId = null;
                 userIdDisplay.textContent = 'Not Logged In';
@@ -250,6 +434,24 @@
                 return null;
             }
             return collection(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/coverLetters`);
+        }
+
+        // JD-008: Get User Prompts Collection Reference
+        function getPromptsCollectionRef() {
+            if (!db || !userId) {
+                console.error("Firestore DB or User ID not initialized.");
+                return null;
+            }
+            return collection(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/userPrompts`);
+        }
+
+        // JD-008: Get Prompt Edit History Collection Reference
+        function getPromptEditHistoryCollectionRef() {
+            if (!db || !userId) {
+                console.error("Firestore DB or User ID not initialized.");
+                return null;
+            }
+            return collection(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/promptEditHistory`);
         }
 
         function setupJobDataListener() {
@@ -284,6 +486,23 @@
             }
         }
 
+        // JD-004: Setup listener for user-defined prompts
+        function setupUserPromptsListener() {
+            const colRef = getPromptsCollectionRef();
+            if (colRef) {
+                onSnapshot(query(colRef), (snapshot) => {
+                    userPrompts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: 'user' }));
+                    console.log(`Loaded ${userPrompts.length} user prompts.`);
+                    renderPrompts(); // Re-render prompts whenever userPrompts change
+                    showMessage('User prompts synchronized with cloud.', 'info');
+                }, (error) => {
+                    showMessage('Error fetching user prompts: ' + error.message, 'error');
+                    console.error("Error listening to user prompts: ", error);
+                });
+            } else {
+                showMessage('User prompts Firestore not ready.', 'error');
+            }
+        }
 
         async function initializeFirebaseAndLoadData() {
             showLoading(); 
@@ -291,7 +510,6 @@
                 app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getFirestore(app);
-                // Now handleAuthStateChange is defined when this is called
                 onAuthStateChanged(auth, handleAuthStateChange); 
             } catch (error) {
                 showMessage('Error initializing Firebase: ' + error.message, 'error');
@@ -300,9 +518,273 @@
             }
         }
 
+        // --- Prompt Management (JD-004 & JD-008) ---
+
+        function renderPrompts() {
+            promptListContainer.innerHTML = ''; // Clear existing list
+
+            // Combine default and user prompts
+            const allPrompts = [...defaultPrompts, ...userPrompts];
+
+            if (allPrompts.length === 0) {
+                promptListContainer.innerHTML = '<p class="text-center text-gray-500 py-2">No prompts available. Add a new prompt above!</p>';
+                return;
+            }
+
+            allPrompts.forEach(prompt => {
+                const promptItemDiv = document.createElement('div');
+                promptItemDiv.className = 'prompt-item';
+                promptItemDiv.dataset.promptId = prompt.id;
+
+                // Ensure promptStates has an entry for this prompt, default to true (enabled)
+                if (promptStates[prompt.id] === undefined) {
+                    promptStates[prompt.id] = true; 
+                }
+
+                const isEnabled = promptStates[prompt.id];
+
+                // Toggle Switch
+                const toggleLabel = document.createElement('label');
+                toggleLabel.className = 'toggle-switch';
+                const toggleInput = document.createElement('input');
+                toggleInput.type = 'checkbox';
+                toggleInput.checked = isEnabled;
+                toggleInput.dataset.action = 'toggle-prompt';
+                toggleInput.dataset.promptId = prompt.id;
+                const toggleSlider = document.createElement('span');
+                toggleSlider.className = 'toggle-slider';
+                toggleLabel.appendChild(toggleInput);
+                toggleLabel.appendChild(toggleSlider);
+                promptItemDiv.appendChild(toggleLabel);
+
+                // Prompt Text
+                const promptTextSpan = document.createElement('span');
+                promptTextSpan.className = `prompt-text ${isEnabled ? '' : 'disabled'}`;
+                promptTextSpan.textContent = prompt.text;
+                promptTextSpan.dataset.promptId = prompt.id;
+                promptTextSpan.dataset.originalText = prompt.text; // Store original text for editing comparison
+                promptItemDiv.appendChild(promptTextSpan);
+
+                // Actions (Edit, Delete) - only for user-added prompts
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'prompt-actions';
+
+                if (prompt.type === 'user') {
+                    // Edit Icon (Pencil)
+                    const editIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                    editIcon.setAttribute("viewBox", "0 0 20 20");
+                    editIcon.setAttribute("fill", "currentColor");
+                    editIcon.className = "w-5 h-5 prompt-action-icon";
+                    editIcon.dataset.action = 'edit-prompt';
+                    editIcon.dataset.promptId = prompt.id;
+                    editIcon.innerHTML = `<path d="M5.433 13.917l-1.567.882a1.5 1.5 0 0 0-.882 1.567l.249 1.472c.125.737.697 1.299 1.434 1.424l1.472.249a1.5 1.5 0 0 0 1.567-.882l.882-1.567m4.905-2.72L18.62 3.081a1.5 1.5 0 0 0-2.121-2.121L12.112 9.172m-4.224 0L1.879 15.621c-.482.482-.97.027-1.121-.121L.379 14.224a1.5 1.5 0 0 1-.121-1.121l6.543-6.543Z" />`;
+                    actionsDiv.appendChild(editIcon);
+
+                    // Delete Icon (Trash)
+                    const deleteIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                    deleteIcon.setAttribute("viewBox", "0 0 20 20");
+                    deleteIcon.setAttribute("fill", "currentColor");
+                    deleteIcon.className = "w-5 h-5 prompt-action-icon text-red-500 hover:text-red-700";
+                    deleteIcon.dataset.action = 'delete-prompt';
+                    deleteIcon.dataset.promptId = prompt.id;
+                    deleteIcon.innerHTML = `<path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.594 19h4.812a2.75 2.75 0 0 0 2.742-2.536l.841-10.518.148.022a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.35 7.01a.75.75 0 1 0 1.5-.06l-.35-7.01Zm3.42-.06a.75.75 0 0 0-1.5.06l-.35 7.01a.75.75 0 0 0 1.5.06l.35-7.01Z" clip-rule="evenodd" />`;
+                    actionsDiv.appendChild(deleteIcon);
+                }
+                promptItemDiv.appendChild(actionsDiv);
+
+                promptListContainer.appendChild(promptItemDiv);
+            });
+
+            addPromptEventListeners(); // Attach event listeners after rendering
+        }
+
+        // Add event listeners for dynamically created prompt elements
+        function addPromptEventListeners() {
+            promptListContainer.querySelectorAll('input[type="checkbox"][data-action="toggle-prompt"]').forEach(checkbox => {
+                checkbox.onchange = (e) => {
+                    const promptId = e.target.dataset.promptId;
+                    promptStates[promptId] = e.target.checked;
+                    renderPrompts(); // Re-render to apply strikethrough/remove
+                };
+            });
+
+            promptListContainer.querySelectorAll('svg[data-action="edit-prompt"]').forEach(icon => {
+                icon.onclick = (e) => {
+                    const promptId = e.target.closest('svg').dataset.promptId;
+                    const promptTextSpan = promptListContainer.querySelector(`.prompt-text[data-prompt-id="${promptId}"]`);
+                    
+                    if (promptTextSpan.contentEditable === 'true') {
+                        // Already in edit mode, save changes
+                        saveEditedPrompt(promptId, promptTextSpan);
+                    } else {
+                        // Enter edit mode
+                        promptTextSpan.contentEditable = 'true';
+                        promptTextSpan.classList.add('editable');
+                        promptTextSpan.focus();
+                        // Change icon to save/check mark
+                        e.target.closest('svg').innerHTML = `<path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8.5 9.5a.75.75 0 0 1-1.172.073l-4.75-4.5a.75.75 0 0 1 1.06-1.06l4.205 3.996 7.93-8.888a.75.75 0 0 1 1.052-.143Z" clip-rule="evenodd" />`;
+                        e.target.closest('svg').dataset.action = 'save-edit'; // Change action
+                    }
+                };
+            });
+
+            // Handle save action for edited prompts
+            promptListContainer.querySelectorAll('svg[data-action="save-edit"]').forEach(icon => {
+                icon.onclick = (e) => {
+                    const promptId = e.target.closest('svg').dataset.promptId;
+                    const promptTextSpan = promptListContainer.querySelector(`.prompt-text[data-prompt-id="${promptId}"]`);
+                    saveEditedPrompt(promptId, promptTextSpan);
+                };
+            });
+
+            promptListContainer.querySelectorAll('svg[data-action="delete-prompt"]').forEach(icon => {
+                icon.onclick = (e) => {
+                    const promptId = e.target.closest('svg').dataset.promptId;
+                    // Confirm deletion
+                    if (confirm('Are you sure you want to delete this custom prompt?')) {
+                        deletePromptFromFirestore(promptId);
+                    }
+                };
+            });
+        }
+
+        async function saveEditedPrompt(promptId, promptTextSpan) {
+            const newText = promptTextSpan.textContent.trim();
+            const oldText = promptTextSpan.dataset.originalText;
+
+            if (newText.length > 400) {
+                showMessage('Prompt text exceeds 400 character limit.', 'error');
+                return;
+            }
+            if (newText === oldText) {
+                showMessage('No changes detected.', 'info');
+                promptTextSpan.contentEditable = 'false';
+                promptTextSpan.classList.remove('editable');
+                renderPrompts(); // Re-render to restore original icon
+                return;
+            }
+            if (!newText) {
+                showMessage('Prompt text cannot be empty.', 'error');
+                return;
+            }
+
+            showLoading();
+            try {
+                await updatePromptInFirestore(promptId, newText, oldText);
+                showMessage('Prompt updated successfully!', 'success');
+                promptTextSpan.contentEditable = 'false';
+                promptTextSpan.classList.remove('editable');
+                promptTextSpan.dataset.originalText = newText; // Update original text
+                renderPrompts(); // Re-render to update UI and icon
+            } catch (e) {
+                showMessage('Error updating prompt: ' + e.message, 'error');
+                console.error("Error updating prompt:", e);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function addPromptToFirestore(promptText) {
+            if (!userId) {
+                showMessage('Please log in to add prompts.', 'info');
+                return;
+            }
+            if (!promptText.trim()) {
+                showMessage('Prompt text cannot be empty.', 'error');
+                return;
+            }
+            if (promptText.length > 400) {
+                showMessage('Prompt text exceeds 400 character limit.', 'error');
+                return;
+            }
+
+            showLoading();
+            try {
+                const colRef = getPromptsCollectionRef();
+                if (colRef) {
+                    await addDoc(colRef, {
+                        promptText: promptText,
+                        originPage: 'Cover Letter Writer', // Specific to this page
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp()
+                    });
+                    showMessage('New prompt added successfully!', 'success');
+                    newPromptInput.value = ''; // Clear input
+                    charCountSpan.textContent = '0'; // Reset char count
+                }
+            } catch (e) {
+                showMessage('Error adding prompt: ' + e.message, 'error');
+                console.error("Error adding prompt: ", e);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function updatePromptInFirestore(promptId, newPromptText, oldPromptText) {
+            if (!userId) {
+                showMessage('Please log in to edit prompts.', 'info');
+                return;
+            }
+            if (!newPromptText.trim()) {
+                showMessage('Prompt text cannot be empty.', 'error');
+                return;
+            }
+            if (newPromptText.length > 400) {
+                showMessage('Prompt text exceeds 400 character limit.', 'error');
+                return;
+            }
+
+            showLoading();
+            try {
+                const promptDocRef = doc(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/userPrompts`, promptId);
+                
+                // Record edit history (JD-008)
+                const editHistoryColRef = getPromptEditHistoryCollectionRef();
+                if (editHistoryColRef) {
+                    await addDoc(editHistoryColRef, {
+                        promptId: promptId,
+                        priorPromptText: oldPromptText,
+                        updatedPromptText: newPromptText,
+                        editedAt: serverTimestamp()
+                    });
+                }
+
+                // Update the main prompt document
+                await setDoc(promptDocRef, {
+                    promptText: newPromptText,
+                    updatedAt: serverTimestamp()
+                }, { merge: true });
+
+                showMessage('Prompt updated successfully!', 'success');
+            } catch (e) {
+                showMessage('Error updating prompt: ' + e.message, 'error');
+                console.error("Error updating prompt: ", e);
+                throw e; // Re-throw to be caught by the calling function
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function deletePromptFromFirestore(promptId) {
+            if (!userId) {
+                showMessage('Please log in to delete prompts.', 'info');
+                return;
+            }
+
+            showLoading();
+            try {
+                const promptDocRef = doc(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/userPrompts`, promptId);
+                await deleteDoc(promptDocRef);
+                showMessage('Prompt deleted successfully!', 'success');
+            } catch (e) {
+                showMessage('Error deleting prompt: ' + e.message, 'error');
+                console.error("Error deleting prompt: ", e);
+            } finally {
+                hideLoading();
+            }
+        }
 
         // --- Cover Letter Generation Logic ---
-
         async function generateCoverLetter() {
             showLoading();
             const jobDescriptionRaw = jobDescriptionInput.value.trim();
@@ -431,20 +913,29 @@
             prompt += `\n- **Crucially, when mentioning your specific job history (roles, companies, dates), ONLY use the information provided under "My Most Relevant Job Experiences." Do NOT infer or use company names or exact job titles from the "Examples of Past Cover Letter Phrasing and Tone." The past cover letter examples are for tone and phrasing inspiration ONLY.**`;
             prompt += `\n- Highlight how your skills and experiences from your "My Most Relevant Job Experiences" make you an ideal candidate.`;
             prompt += `\n- Identify key responsibilities from the job description and provide how you can meet those responsibilities`;
-            prompt += `\n- Focus on specific achievements and quantifiable results where possible from your background.`;
+            prompt += `\n- Focus on specific achievements and quantifiable results where possible from my background.`;
             prompt += `\n- Maintain a professional, confident, and enthusiastic tone. Display empathy and tones of leadership`;
             prompt += `\n- Do not just copy-paste text; synthesize and adapt it.`;
-            prompt += `\n- **For the introductory paragraph, lead with a strong statement about your experience, such as "I am an experienced project manager..." instead of phrases like "it is my express interest" or similar direct statements of interest.**`;
+            prompt += `\n- **For the introductory paragraph, lead with a strong statement about my experience, such as "I am an experienced project manager..." instead of phrases like "it is my express interest" or similar direct statements of interest.**`;
             prompt += `\n- **Ensure the sentence structure flows naturally and avoids overly dense or keyword-stuffed phrasing. Prioritize readability and clear communication over keyword repetition.**`;
             prompt += `\n- Start directly with the salutation "Dear Hiring Manager,".`;
             prompt += `\n- End with a professional closing.`;
+
+            // JD-004: Add enabled user prompts to the main prompt
+            const enabledPrompts = [...defaultPrompts, ...userPrompts].filter(p => promptStates[p.id]);
+            if (enabledPrompts.length > 0) {
+                prompt += `\n\n**Additional AI Directives (from enabled prompts):**\n`;
+                enabledPrompts.forEach((p, index) => {
+                    prompt += `- ${p.text}\n`;
+                });
+            }
 
             // --- 4. Call LLM API ---
             try {
                 let chatHistory = [];
                 chatHistory.push({ role: "user", parts: [{ text: prompt }] });
                 const payload = { contents: chatHistory };
-                const apiKey = "AIzaSyDwkW-MVF3aKqI-F-xGP0XA1uvcsPeanSo"; // Keep your actual key here.
+                const apiKey = "YOUR_GOOGLE_CLOUD_API_KEY_HERE"; // Keep your actual key here.
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                 const response = await fetch(apiUrl, {
@@ -475,7 +966,29 @@
             }
         }
 
-        // Event Listeners
+        // --- Event Listeners for JD-004 UI ---
+        promptsCollapsibleHeader.addEventListener('click', () => {
+            promptsCollapsibleContent.classList.toggle('expanded');
+            promptsCollapsibleHeader.classList.toggle('expanded');
+        });
+
+        masterPromptToggle.addEventListener('change', (e) => {
+            const isChecked = e.target.checked;
+            [...defaultPrompts, ...userPrompts].forEach(p => {
+                promptStates[p.id] = isChecked;
+            });
+            renderPrompts(); // Re-render all prompts to reflect the new state
+        });
+
+        newPromptInput.addEventListener('input', () => {
+            charCountSpan.textContent = newPromptInput.value.length;
+        });
+
+        addNewPromptBtn.addEventListener('click', () => {
+            addPromptToFirestore(newPromptInput.value);
+        });
+
+        // Event Listeners for main app functionality
         generateCoverLetterBtn.addEventListener('click', generateCoverLetter);
 
         window.onload = initializeFirebaseAndLoadData;
