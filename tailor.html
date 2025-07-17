@@ -80,7 +80,7 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Styles for Prompts Section (JD-001) */
+        /* Styles for Prompts Section (JD-001) and ATS Review (JD-002) */
         .collapsible-header {
             background-color: #e2e8f0;
             padding: 0.75rem 1rem;
@@ -276,6 +276,21 @@
 
         <h2 class="text-xl font-semibold text-gray-700 mb-3">Tailored Resume Suggestions:</h2>
         <textarea id="tailoredResumeOutput" class="output-textarea" readonly placeholder="Your AI-tailored resume suggestions will appear here."></textarea>
+
+        <!-- ATS Review Notes Section (JD-002) -->
+        <div class="ats-review-section mt-6">
+            <div class="collapsible-header" id="atsReviewCollapsibleHeader">
+                <span>ATS Review Notes</span>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+                    <path fill-rule="evenodd" d="M10 3a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 3ZM10 16.25a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 1 1.5 0v4.5a.75.75 0 0 1-.75.75ZM12.75 10a.75.75 0 0 0-.75-.75H4.5a.75.75 0 0 0 0 1.5h7.5a.75.75 0 0 0 .75-.75ZM15.5 10a.75.75 0 0 0-.75-.75h-2.5a.75.75 0 0 0 0 1.5h2.5a.75.75 0 0 0 .75-.75Z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <div class="collapsible-content" id="atsReviewCollapsibleContent">
+                <textarea id="atsReviewOutput" class="output-textarea" readonly placeholder="ATS review notes will appear here after tailoring your resume."></textarea>
+            </div>
+        </div>
+        <!-- End ATS Review Notes Section -->
+
     </div>
 
     <script type="module">
@@ -332,9 +347,16 @@
         const promptListContainer = document.getElementById('promptList');
         const promptCountSpan = document.getElementById('promptCount'); // New element for prompt count
 
+        // JD-002 new elements for ATS Review
+        const atsReviewCollapsibleHeader = document.getElementById('atsReviewCollapsibleHeader');
+        const atsReviewCollapsibleContent = document.getElementById('atsReviewCollapsibleContent');
+        const atsReviewOutput = document.getElementById('atsReviewOutput');
+
+
         // --- Utility Functions ---
         function showLoading() {
             tailoredResumeOutput.value = "Generating tailored resume suggestions... This may take a moment.";
+            atsReviewOutput.value = "Generating ATS review notes..."; // Clear ATS output on new generation
             loadingOverlay.classList.remove('hidden');
         }
 
@@ -865,60 +887,114 @@
                 });
             }
 
-            // --- 2. Construct LLM Prompt ---
-            let prompt = `You are an expert resume writer. Your task is to provide tailored resume suggestions based on the provided job description and my relevant job experiences.`;
-            prompt += `\n\n**Job Description:**\n${jobDescriptionRaw}`;
-            prompt += `\n\n${relevantExperienceString}`; 
+            // --- 2. Construct LLM Prompt for Resume Tailoring ---
+            let promptForTailoring = `You are an expert resume writer. Your task is to provide tailored resume suggestions based on the provided job description and my relevant job experiences.`;
+            promptForTailoring += `\n\n**Job Description:**\n${jobDescriptionRaw}`;
+            promptForTailoring += `\n\n${relevantExperienceString}`; 
             
-            prompt += `\n\n**Instructions for Tailoring:**`;
-            prompt += `\n- Analyze the job description and identify key skills, responsibilities, and qualifications.`;
-            prompt += `\n- For each of my "Most Relevant Job Experiences," suggest specific bullet points or phrases that highlight how my experience directly addresses the job description's requirements.`;
-            prompt += `\n- Focus on quantifiable achievements and results where possible.`;
-            prompt += `\n- Suggest ways to rephrase existing resume bullet points to better align with the job description's language.`;
-            prompt += `\n- Provide advice on what skills to emphasize or de-emphasize based on the job description.`;
-            prompt += `\n- If applicable, suggest a brief, impactful summary or objective statement tailored to this specific job.`;
-            prompt += `\n- Present suggestions clearly, perhaps using bullet points or numbered lists for easy integration into a resume.`;
+            promptForTailoring += `\n\n**Instructions for Tailoring:**`;
+            promptForTailoring += `\n- Analyze the job description and identify key skills, responsibilities, and qualifications.`;
+            promptForTailoring += `\n- For each of my "Most Relevant Job Experiences," suggest specific bullet points or phrases that highlight how my experience directly addresses the job description's requirements.`;
+            promptForTailoring += `\n- Focus on quantifiable achievements and results where possible.`;
+            promptForTailoring += `\n- Suggest ways to rephrase existing resume bullet points to better align with the job description's language.`;
+            promptForTailoring += `\n- If applicable, suggest a brief, impactful summary or objective statement tailored to this specific job.`;
+            promptForTailoring += `\n- Present suggestions clearly, perhaps using bullet points or numbered lists for easy integration into a resume.`;
 
             // JD-001: Add enabled user prompts to the main prompt
             const enabledPrompts = [...defaultPrompts, ...userPrompts].filter(p => promptStates[p.id]);
             if (enabledPrompts.length > 0) {
-                prompt += `\n\n**Additional AI Directives (from enabled prompts):**\n`;
+                promptForTailoring += `\n\n**Additional AI Directives (from enabled prompts):**\n`;
                 enabledPrompts.forEach((p, index) => {
-                    prompt += `- ${p.promptText}\n`;
+                    promptForTailoring += `- ${p.promptText}\n`;
                 });
             }
 
-            // --- 3. Call LLM API ---
+            let generatedTailoredResumeText = "";
+
+            // --- 3. Call LLM API for Resume Tailoring ---
             try {
-                let chatHistory = [];
-                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-                const payload = { contents: chatHistory };
-                const apiKey = "AIzaSyDwkW-MVF3aKqI-F-xGP0XA1uvcsPeanSo"; // Keep your actual key here.
+                let chatHistoryTailoring = [];
+                chatHistoryTailoring.push({ role: "user", parts: [{ text: promptForTailoring }] });
+                const payloadTailoring = { contents: chatHistoryTailoring };
+                const apiKey = "AIzaSyDwkW-MVF3aKqI-F-xGP0XA1uvcsPeanSo"; 
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
-                const response = await fetch(apiUrl, {
+                const responseTailoring = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(payloadTailoring)
                 });
 
-                const result = await response.json();
+                const resultTailoring = await responseTailoring.json();
 
-                if (result.candidates && result.candidates.length > 0 &&
-                    result.candidates[0].content && result.candidates[0].content.parts &&
-                    result.candidates[0].content.parts.length > 0) {
-                    const generatedText = result.candidates[0].content.parts[0].text;
-                    tailoredResumeOutput.value = generatedText;
+                if (resultTailoring.candidates && resultTailoring.candidates.length > 0 &&
+                    resultTailoring.candidates[0].content && resultTailoring.candidates[0].content.parts &&
+                    resultTailoring.candidates[0].content.parts.length > 0) {
+                    generatedTailoredResumeText = resultTailoring.candidates[0].content.parts[0].text;
+                    tailoredResumeOutput.value = generatedTailoredResumeText;
                     showMessage('Resume tailoring suggestions generated successfully!', 'success');
                 } else {
                     tailoredResumeOutput.value = "Failed to generate resume suggestions. The AI response was empty or malformed.";
-                    showMessage('AI generation failed. Please try again.', 'error');
-                    console.error("AI generation failed:", result);
+                    showMessage('AI tailoring failed. Please try again.', 'error');
+                    console.error("AI tailoring failed:", resultTailoring);
+                    hideLoading();
+                    return; // Stop if tailoring failed
                 }
             } catch (error) {
-                tailoredResumeOutput.value = "An error occurred while communicating with the AI. Please check your network connection or try again later.";
-                showMessage('Network or API error: ' + error.message, 'error');
-                console.error("Fetch error:", error);
+                tailoredResumeOutput.value = "An error occurred while communicating with the AI for tailoring. Please check your network connection or try again later.";
+                showMessage('Network or API error during tailoring: ' + error.message, 'error');
+                console.error("Fetch error during tailoring:", error);
+                hideLoading();
+                return; // Stop if tailoring failed
+            }
+
+            // --- JD-002: Generate ATS Review Notes ---
+            const promptForATSReview = `You are an Applicant Tracking System (ATS) expert. Your task is to review a job description and a tailored resume output, and provide notes on how well the resume aligns with the ATS's expectations. Focus on keyword matching, formatting, and overall readability for an ATS.
+
+            **Job Description:**
+            ${jobDescriptionRaw}
+
+            **Tailored Resume Output (from previous AI generation):**
+            ${generatedTailoredResumeText}
+
+            **ATS Review Instructions:**
+            - Identify key keywords from the Job Description and assess their presence and prominence in the Tailored Resume Output.
+            - Comment on the formatting: Is it clean, standard, and easy for an ATS to parse? (e.g., avoid complex tables, excessive graphics, non-standard fonts).
+            - Assess the readability for an ATS: Is the language clear and direct? Are action verbs used effectively?
+            - Provide specific suggestions for improvement to enhance ATS compatibility.
+            - Structure your review with clear headings (e.g., "Keyword Analysis," "Formatting Review," "Readability & Action Verbs," "Suggestions for Improvement").`;
+
+            try {
+                atsReviewOutput.value = "Generating ATS review notes..."; // Update ATS output with loading message
+                const chatHistoryATS = [];
+                chatHistoryATS.push({ role: "user", parts: [{ text: promptForATSReview }] });
+                const payloadATS = { contents: chatHistoryATS };
+                const apiKey = "YOUR_GOOGLE_CLOUD_API_KEY_HERE"; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const responseATS = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payloadATS)
+                });
+
+                const resultATS = await responseATS.json();
+
+                if (resultATS.candidates && resultATS.candidates.length > 0 &&
+                    resultATS.candidates[0].content && resultATS.candidates[0].content.parts &&
+                    resultATS.candidates[0].content.parts.length > 0) {
+                    const generatedATSReviewText = resultATS.candidates[0].content.parts[0].text;
+                    atsReviewOutput.value = generatedATSReviewText;
+                    showMessage('ATS review notes generated successfully!', 'success');
+                } else {
+                    atsReviewOutput.value = "Failed to generate ATS review notes. The AI response was empty or malformed.";
+                    showMessage('ATS review generation failed. Please try again.', 'error');
+                    console.error("ATS review generation failed:", resultATS);
+                }
+            } catch (error) {
+                atsReviewOutput.value = "An error occurred while communicating with the AI for ATS review. Please check your network connection or try again later.";
+                showMessage('Network or API error during ATS review: ' + error.message, 'error');
+                console.error("Fetch error during ATS review:", error);
             } finally {
                 hideLoading();
             }
@@ -948,6 +1024,12 @@
 
         // Event Listeners for main app functionality
         tailorResumeBtn.addEventListener('click', tailorResume);
+
+        // JD-002: Event Listener for ATS Review collapsible header
+        atsReviewCollapsibleHeader.addEventListener('click', () => {
+            atsReviewCollapsibleContent.classList.toggle('expanded');
+            atsReviewCollapsibleHeader.classList.toggle('expanded');
+        });
 
         window.onload = initializeFirebaseAndLoadData;
     </script>
