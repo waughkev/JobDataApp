@@ -729,7 +729,7 @@
                 if (colRef) {
                     await addDoc(colRef, {
                         promptText: promptText,
-                        originPage: 'Cover Letter Writer', // Specific to this page
+                        // Removed originPage: 'Cover Letter Writer' to make prompts universal
                         createdAt: serverTimestamp(),
                         updatedAt: serverTimestamp()
                     });
