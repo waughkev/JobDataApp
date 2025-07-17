@@ -243,7 +243,7 @@
         <!-- AI Prompts Section (JD-004) -->
         <div class="ai-prompts-section mb-6">
             <div class="collapsible-header" id="promptsCollapsibleHeader">
-                <span>AI Prompts</span>
+                <span>AI Prompts (<span id="promptCount">0</span> total)</span>
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
                     <path fill-rule="evenodd" d="M10 3a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 3ZM10 16.25a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 1 1.5 0v4.5a.75.75 0 0 1-.75.75ZM12.75 10a.75.75 0 0 0-.75-.75H4.5a.75.75 0 0 0 0 1.5h7.5a.75.75 0 0 0 .75-.75ZM15.5 10a.75.75 0 0 0-.75-.75h-2.5a.75.75 0 0 0 0 1.5h2.5a.75.75 0 0 0 .75-.75Z" clip-rule="evenodd" />
                 </svg>
@@ -331,6 +331,7 @@
         const charCountSpan = document.getElementById('charCount');
         const addNewPromptBtn = document.getElementById('addNewPromptBtn');
         const promptListContainer = document.getElementById('promptList');
+        const promptCountSpan = document.getElementById('promptCount'); // New element for prompt count
 
         // --- Utility Functions ---
         function showLoading() {
@@ -525,6 +526,7 @@
 
             // Combine default and user prompts
             const allPrompts = [...defaultPrompts, ...userPrompts];
+            promptCountSpan.textContent = allPrompts.length; // Update the prompt count display
 
             if (allPrompts.length === 0) {
                 promptListContainer.innerHTML = '<p class="text-center text-gray-500 py-2">No prompts available. Add a new prompt above!</p>';
@@ -670,15 +672,30 @@
 
             showLoading();
             try {
-                await updatePromptInFirestore(promptId, newText, oldText);
+                const promptDocRef = doc(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/userPrompts`, promptId);
+                
+                // Record edit history (JD-008)
+                const editHistoryColRef = getPromptEditHistoryCollectionRef();
+                if (editHistoryColRef) {
+                    await addDoc(editHistoryColRef, {
+                        promptId: promptId,
+                        priorPromptText: oldPromptText,
+                        updatedPromptText: newText,
+                        editedAt: serverTimestamp()
+                    });
+                }
+
+                // Update the main prompt document
+                await setDoc(promptDocRef, {
+                    promptText: newText,
+                    updatedAt: serverTimestamp()
+                }, { merge: true });
+
                 showMessage('Prompt updated successfully!', 'success');
-                promptTextSpan.contentEditable = 'false';
-                promptTextSpan.classList.remove('editable');
-                promptTextSpan.dataset.originalText = newText; // Update original text
-                renderPrompts(); // Re-render to update UI and icon
             } catch (e) {
                 showMessage('Error updating prompt: ' + e.message, 'error');
                 console.error("Error updating prompt:", e);
+                throw e; // Re-throw to be caught by the calling function
             } finally {
                 hideLoading();
             }
@@ -758,7 +775,7 @@
                 showMessage('Prompt updated successfully!', 'success');
             } catch (e) {
                 showMessage('Error updating prompt: ' + e.message, 'error');
-                console.error("Error updating prompt: ", e);
+                console.error("Error updating prompt:", e);
                 throw e; // Re-throw to be caught by the calling function
             } finally {
                 hideLoading();
@@ -935,7 +952,7 @@
                 let chatHistory = [];
                 chatHistory.push({ role: "user", parts: [{ text: prompt }] });
                 const payload = { contents: chatHistory };
-                const apiKey = "YOUR_GOOGLE_CLOUD_API_KEY_HERE"; // Keep your actual key here.
+                const apiKey = "AIzaSyDwkW-MVF3aKqI-F-xGP0XA1uvcsPeanSo"; // Keep your actual key here.
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                 const response = await fetch(apiUrl, {
