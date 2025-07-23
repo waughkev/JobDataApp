@@ -301,7 +301,7 @@
 
         // Your web app's Firebase configuration - MUST BE THE SAME AS YOUR OTHER PAGES
         const firebaseConfig = {
-            apiKey: "AIzaSyDwkW-MVF3aKqI-F-xGP0XA1uvcsPeanSo",
+            apiKey: window.FIREBASE_API_KEY,
             authDomain: "jobdata-c7f32.firebaseapp.com",
             projectId: "jobdata-c7f32",
             storageBucket: "jobdata-c7f32.firebasestorage.app",
@@ -916,7 +916,7 @@
                 let chatHistoryTailoring = [];
                 chatHistoryTailoring.push({ role: "user", parts: [{ text: promptForTailoring }] });
                 const payloadTailoring = { contents: chatHistoryTailoring };
-                const apiKey = "AIzaSyDwkW-MVF3aKqI-F-xGP0XA1uvcsPeanSo"; 
+                const apiKey = window.FIREBASE_API_KEY; 
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                 const responseTailoring = await fetch(apiUrl, {
@@ -969,7 +969,7 @@
                 const chatHistoryATS = [];
                 chatHistoryATS.push({ role: "user", parts: [{ text: promptForATSReview }] });
                 const payloadATS = { contents: chatHistoryATS };
-                const apiKey = "AIzaSyDwkW-MVF3aKqI-F-xGP0XA1uvcsPeanSo"; 
+                const apiKey = window.FIREBASE_API_KEY; 
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                 const responseATS = await fetch(apiUrl, {
