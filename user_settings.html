@@ -18,7 +18,7 @@
             border-radius: 0.75rem;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
-        input[type="text"], input[type="email"], input[type="tel"], input[type="url"] {
+        input[type="text"], input[type="email"], input[type="tel"], input[type="url"], input[type="date"] {
             width: 100%;
             padding: 0.75rem;
             border: 1px solid #d1d5db;
@@ -46,6 +46,15 @@
         .btn-primary:hover {
             background-color: #4338ca;
             box-shadow: 0 4px 8px rgba(79, 70, 229, 0.3);
+        }
+        .btn-secondary {
+            background-color: #6b7280;
+            color: white;
+            box-shadow: 0 2px 4px rgba(107, 114, 128, 0.2);
+        }
+        .btn-secondary:hover {
+            background-color: #4b5563;
+            box-shadow: 0 4px 8px rgba(107, 114, 128, 0.3);
         }
         .message-box {
             background-color: #e0f2fe;
@@ -151,6 +160,22 @@
             <input type="url" id="githubUrlInput" placeholder="e.g., https://github.com/yourusername">
         </div>
 
+        <div class="mb-6 p-4 border rounded-lg bg-gray-50">
+            <h2 class="text-xl font-semibold text-gray-700 mb-3">Education</h2>
+            <div id="educationEntriesContainer">
+                <!-- Education entries will be dynamically added here -->
+            </div>
+            <button type="button" id="addEducationBtn" class="btn btn-secondary mt-4">Add Education</button>
+        </div>
+
+        <div class="mb-6 p-4 border rounded-lg bg-gray-50">
+            <h2 class="text-xl font-semibold text-gray-700 mb-3">Certifications</h2>
+            <div id="certificationEntriesContainer">
+                <!-- Certification entries will be dynamically added here -->
+            </div>
+            <button type="button" id="addCertificationBtn" class="btn btn-secondary mt-4">Add Certification</button>
+        </div>
+
         <button id="saveChangesBottomBtn" class="btn btn-primary">Save Changes</button>
     </div>
 
@@ -182,10 +207,10 @@
         const userIdDisplay = document.getElementById('userIdDisplay');
         const authButton = document.getElementById('authButton');
 
-        // Input fields
+        // Input fields (Personal Details & Online Presence)
         const firstNameInput = document.getElementById('firstNameInput');
         const lastNameInput = document.getElementById('lastNameInput');
-        const emailInput = document.getElementById('emailInput'); // This will be read-only
+        const emailInput = document.getElementById('emailInput');
         const landlinePhoneInput = document.getElementById('landlinePhoneInput');
         const cellPhoneInput = document.getElementById('cellPhoneInput');
         const canTextCellCheckbox = document.getElementById('canTextCellCheckbox');
@@ -193,9 +218,15 @@
         const portfolioWebsiteInput = document.getElementById('portfolioWebsiteInput');
         const githubUrlInput = document.getElementById('githubUrlInput');
 
+        // Containers for dynamic fields
+        const educationEntriesContainer = document.getElementById('educationEntriesContainer');
+        const certificationEntriesContainer = document.getElementById('certificationEntriesContainer');
+
         // Buttons
         const saveChangesTopBtn = document.getElementById('saveChangesTopBtn');
         const saveChangesBottomBtn = document.getElementById('saveChangesBottomBtn');
+        const addEducationBtn = document.getElementById('addEducationBtn');
+        const addCertificationBtn = document.getElementById('addCertificationBtn');
 
         // --- Utility Functions ---
         function showLoading() {
@@ -226,7 +257,6 @@
         }
 
         function isValidEmail(email) {
-            // Basic regex for email validation
             return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
         }
 
@@ -303,7 +333,6 @@
                         const data = docSnapshot.data();
                         firstNameInput.value = data.firstName || '';
                         lastNameInput.value = data.lastName || '';
-                        // emailInput is already set from auth, but ensure consistency
                         if (data.email && data.email !== emailInput.value) {
                             emailInput.value = data.email;
                         }
@@ -313,6 +342,27 @@
                         linkedinUrlInput.value = data.linkedinUrl || '';
                         portfolioWebsiteInput.value = data.portfolioWebsite || '';
                         githubUrlInput.value = data.github || '';
+
+                        // Clear existing dynamic entries before loading
+                        educationEntriesContainer.innerHTML = '';
+                        certificationEntriesContainer.innerHTML = '';
+
+                        // Load Education
+                        if (data.education && Array.isArray(data.education)) {
+                            // Sort education entries chronologically by end date (or start date if no end date)
+                            const sortedEducation = [...data.education].sort((a, b) => {
+                                const dateA = a.endDate ? new Date(a.endDate) : (a.startDate ? new Date(a.startDate) : new Date(0));
+                                const dateB = b.endDate ? new Date(b.endDate) : (b.startDate ? new Date(b.startDate) : new Date(0));
+                                return dateB.getTime() - dateA.getTime(); // Descending order
+                            });
+                            sortedEducation.forEach(edu => addEducationEntry(edu));
+                        }
+
+                        // Load Certifications
+                        if (data.certifications && Array.isArray(data.certifications)) {
+                            data.certifications.forEach(cert => addCertificationEntry(cert));
+                        }
+
                         showMessage('User information loaded.', 'info');
                     } else {
                         showMessage('No user information found. Please fill in your details.', 'info');
@@ -334,7 +384,7 @@
 
             const firstName = firstNameInput.value.trim();
             const lastName = lastNameInput.value.trim();
-            const email = emailInput.value.trim(); // Read-only, but still validate
+            const email = emailInput.value.trim();
             const landlinePhone = landlinePhoneInput.value.trim();
             const cellPhone = cellPhoneInput.value.trim();
             const canTextCell = canTextCellCheckbox.checked;
@@ -342,39 +392,41 @@
             const portfolioWebsite = portfolioWebsiteInput.value.trim();
             const github = githubUrlInput.value.trim();
 
-            // Validation
-            if (!firstName) {
-                showMessage('First Name is required.', 'error');
-                return;
-            }
-            if (firstName.length > 50) {
-                showMessage('First Name cannot exceed 50 characters.', 'error');
-                return;
-            }
-            if (!lastName) {
-                showMessage('Last Name is required.', 'error');
-                return;
-            }
-            if (lastName.length > 50) {
-                showMessage('Last Name cannot exceed 50 characters.', 'error');
-                return;
-            }
-            if (!email || !isValidEmail(email)) {
-                showMessage('A valid Email Address is required.', 'error');
-                return;
-            }
-            if (linkedinUrl && !isValidUrl(linkedinUrl)) {
-                showMessage('Invalid LinkedIn URL.', 'error');
-                return;
-            }
-            if (portfolioWebsite && !isValidUrl(portfolioWebsite)) {
-                showMessage('Invalid Portfolio Website URL.', 'error');
-                return;
-            }
-            if (github && !isValidUrl(github)) {
-                showMessage('Invalid Github URL.', 'error');
-                return;
-            }
+            // Validate personal details
+            if (!firstName) { showMessage('First Name is required.', 'error'); return; }
+            if (firstName.length > 50) { showMessage('First Name cannot exceed 50 characters.', 'error'); return; }
+            if (!lastName) { showMessage('Last Name is required.', 'error'); return; }
+            if (lastName.length > 50) { showMessage('Last Name cannot exceed 50 characters.', 'error'); return; }
+            if (!email || !isValidEmail(email)) { showMessage('A valid Email Address is required.', 'error'); return; }
+            if (linkedinUrl && !isValidUrl(linkedinUrl)) { showMessage('Invalid LinkedIn URL.', 'error'); return; }
+            if (portfolioWebsite && !isValidUrl(portfolioWebsite)) { showMessage('Invalid Portfolio Website URL.', 'error'); return; }
+            if (github && !isValidUrl(github)) { showMessage('Invalid Github URL.', 'error'); return; }
+
+            // Collect Education entries
+            const educationEntries = [];
+            educationEntriesContainer.querySelectorAll('.education-entry').forEach(entryDiv => {
+                const school = entryDiv.querySelector('[data-field="school"]').value.trim();
+                const degree = entryDiv.querySelector('[data-field="degree"]').value.trim();
+                const major = entryDiv.querySelector('[data-field="major"]').value.trim();
+                const startDate = entryDiv.querySelector('[data-field="startDate"]').value.trim();
+                const endDate = entryDiv.querySelector('[data-field="endDate"]').value.trim();
+
+                if (school || degree || major || startDate || endDate) { // Only save if at least one field is filled
+                    educationEntries.push({ school, degree, major, startDate, endDate });
+                }
+            });
+
+            // Collect Certification entries
+            const certificationEntries = [];
+            certificationEntriesContainer.querySelectorAll('.certification-entry').forEach(entryDiv => {
+                const name = entryDiv.querySelector('[data-field="name"]').value.trim();
+                const issuingBody = entryDiv.querySelector('[data-field="issuingBody"]').value.trim();
+                const dateIssued = entryDiv.querySelector('[data-field="dateIssued"]').value.trim();
+
+                if (name || issuingBody || dateIssued) { // Only save if at least one field is filled
+                    certificationEntries.push({ name, issuingBody, dateIssued });
+                }
+            });
 
             showLoading();
             try {
@@ -383,15 +435,17 @@
                     await setDoc(docRef, {
                         firstName: firstName,
                         lastName: lastName,
-                        email: email, // Save the email from auth
+                        email: email,
                         landlinePhone: landlinePhone,
                         cellPhone: cellPhone,
                         canTextCell: canTextCell,
                         linkedinUrl: linkedinUrl,
                         portfolioWebsite: portfolioWebsite,
                         github: github,
+                        education: educationEntries, // Save education array
+                        certifications: certificationEntries, // Save certifications array
                         updatedAt: serverTimestamp()
-                    }, { merge: true }); // Use merge to update existing fields or add new ones
+                    }, { merge: true });
                     showMessage('Your information has been saved successfully!', 'success');
                 }
             } catch (e) {
@@ -402,9 +456,63 @@
             }
         }
 
+        // --- Dynamic Education Fields ---
+        function addEducationEntry(data = {}) {
+            const entryDiv = document.createElement('div');
+            entryDiv.className = 'education-entry border p-3 rounded-md mb-3 bg-white shadow-sm';
+            entryDiv.innerHTML = `
+                <label class="block text-sm font-medium text-gray-700">School</label>
+                <input type="text" data-field="school" placeholder="University Name" value="${data.school || ''}">
+                
+                <label class="block text-sm font-medium text-gray-700">Degree</label>
+                <input type="text" data-field="degree" placeholder="e.g., Bachelor of Science" value="${data.degree || ''}">
+                
+                <label class="block text-sm font-medium text-gray-700">Major</label>
+                <input type="text" data-field="major" placeholder="e.g., Computer Science" value="${data.major || ''}">
+                
+                <label class="block text-sm font-medium text-gray-700">Start Date</label>
+                <input type="date" data-field="startDate" value="${data.startDate || ''}">
+                
+                <label class="block text-sm font-medium text-gray-700">End Date</label>
+                <input type="date" data-field="endDate" value="${data.endDate || ''}">
+                
+                <button type="button" class="remove-entry-btn btn bg-red-500 text-white hover:bg-red-600 mt-2">Remove</button>
+            `;
+            educationEntriesContainer.appendChild(entryDiv);
+
+            entryDiv.querySelector('.remove-entry-btn').addEventListener('click', () => {
+                entryDiv.remove();
+            });
+        }
+
+        // --- Dynamic Certification Fields ---
+        function addCertificationEntry(data = {}) {
+            const entryDiv = document.createElement('div');
+            entryDiv.className = 'certification-entry border p-3 rounded-md mb-3 bg-white shadow-sm';
+            entryDiv.innerHTML = `
+                <label class="block text-sm font-medium text-gray-700">Certification Name</label>
+                <input type="text" data-field="name" placeholder="e.g., Certified Scrum Master" value="${data.name || ''}">
+                
+                <label class="block text-sm font-medium text-gray-700">Issuing Body</label>
+                <input type="text" data-field="issuingBody" placeholder="e.g., Scrum Alliance" value="${data.issuingBody || ''}">
+                
+                <label class="block text-sm font-medium text-gray-700">Date Issued</label>
+                <input type="date" data-field="dateIssued" value="${data.dateIssued || ''}">
+                
+                <button type="button" class="remove-entry-btn btn bg-red-500 text-white hover:bg-red-600 mt-2">Remove</button>
+            `;
+            certificationEntriesContainer.appendChild(entryDiv);
+
+            entryDiv.querySelector('.remove-entry-btn').addEventListener('click', () => {
+                entryDiv.remove();
+            });
+        }
+
         // --- Event Listeners ---
         saveChangesTopBtn.addEventListener('click', saveUserInfo);
         saveChangesBottomBtn.addEventListener('click', saveUserInfo);
+        addEducationBtn.addEventListener('click', () => addEducationEntry());
+        addCertificationBtn.addEventListener('click', () => addCertificationEntry());
 
         window.onload = initializeFirebase;
     </script>
