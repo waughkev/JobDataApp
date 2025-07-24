@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Settings</title>
+    <title>User Information</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -18,7 +18,7 @@
             border-radius: 0.75rem;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
-        input[type="email"], input[type="password"], input[type="text"] {
+        input[type="text"], input[type="email"], input[type="tel"], input[type="url"] {
             width: 100%;
             padding: 0.75rem;
             border: 1px solid #d1d5db;
@@ -26,6 +26,10 @@
             font-size: 1rem;
             margin-bottom: 1rem;
             box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+        }
+        input[readonly] {
+            background-color: #e9ecef;
+            cursor: not-allowed;
         }
         .btn {
             padding: 0.75rem 1.5rem;
@@ -42,15 +46,6 @@
         .btn-primary:hover {
             background-color: #4338ca;
             box-shadow: 0 4px 8px rgba(79, 70, 229, 0.3);
-        }
-        .btn-danger {
-            background-color: #ef4444;
-            color: white;
-            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
-        }
-        .btn-danger:hover {
-            background-color: #dc2626;
-            box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
         }
         .message-box {
             background-color: #e0f2fe;
@@ -111,7 +106,7 @@
     </div>
 
     <div class="container">
-        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">User Settings</h1>
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Your Information</h1>
 
         <p class="text-sm text-gray-600 mb-4 text-center">Your User ID: <span id="userIdDisplay" class="font-semibold text-gray-800">Loading...</span></p>
 
@@ -119,33 +114,51 @@
             <span id="message-content"></span>
         </div>
 
+        <button id="saveChangesTopBtn" class="btn btn-primary mb-6">Save Changes</button>
+
         <div class="mb-6 p-4 border rounded-lg bg-gray-50">
-            <h2 class="text-xl font-semibold text-gray-700 mb-3">Update Email</h2>
-            <input type="email" id="newEmailInput" placeholder="New Email Address">
-            <input type="password" id="currentPasswordForEmail" placeholder="Current Password">
-            <button id="updateEmailBtn" class="btn btn-primary">Update Email</button>
+            <h2 class="text-xl font-semibold text-gray-700 mb-3">Personal Details</h2>
+            <label for="firstNameInput" class="block text-sm font-medium text-gray-700">First Name <span class="text-red-500">*</span></label>
+            <input type="text" id="firstNameInput" placeholder="First Name" maxlength="50">
+
+            <label for="lastNameInput" class="block text-sm font-medium text-gray-700">Last Name <span class="text-red-500">*</span></label>
+            <input type="text" id="lastNameInput" placeholder="Last Name" maxlength="50">
+
+            <label for="emailInput" class="block text-sm font-medium text-gray-700">Email Address <span class="text-red-500">*</span></label>
+            <input type="email" id="emailInput" placeholder="Email Address" readonly>
+
+            <label for="landlinePhoneInput" class="block text-sm font-medium text-gray-700">Landline Phone Number</label>
+            <input type="tel" id="landlinePhoneInput" placeholder="e.g., +1-555-123-4567">
+
+            <label for="cellPhoneInput" class="block text-sm font-medium text-gray-700">Cell Phone Number</label>
+            <input type="tel" id="cellPhoneInput" placeholder="e.g., +1-555-987-6543">
+            
+            <div class="flex items-center mb-4">
+                <input type="checkbox" id="canTextCellCheckbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                <label for="canTextCellCheckbox" class="ml-2 block text-sm text-gray-900">Can we text the Cell Phone Number?</label>
+            </div>
         </div>
 
         <div class="mb-6 p-4 border rounded-lg bg-gray-50">
-            <h2 class="text-xl font-semibold text-gray-700 mb-3">Update Password</h2>
-            <input type="password" id="newPasswordInput" placeholder="New Password (min 6 characters)">
-            <input type="password" id="currentPasswordForPassword" placeholder="Current Password">
-            <button id="updatePasswordBtn" class="btn btn-primary">Update Password</button>
+            <h2 class="text-xl font-semibold text-gray-700 mb-3">Online Presence</h2>
+            <label for="linkedinUrlInput" class="block text-sm font-medium text-gray-700">LinkedIn URL</label>
+            <input type="url" id="linkedinUrlInput" placeholder="e.g., https://www.linkedin.com/in/yourprofile">
+
+            <label for="portfolioWebsiteInput" class="block text-sm font-medium text-gray-700">Portfolio Website</label>
+            <input type="url" id="portfolioWebsiteInput" placeholder="e.g., https://www.yourportfolio.com">
+
+            <label for="githubUrlInput" class="block text-sm font-medium text-gray-700">Github URL</label>
+            <input type="url" id="githubUrlInput" placeholder="e.g., https://github.com/yourusername">
         </div>
 
-        <div class="mb-6 p-4 border rounded-lg bg-gray-50">
-            <h2 class="text-xl font-semibold text-gray-700 mb-3">Delete Account</h2>
-            <p class="text-gray-700 mb-4">This action is irreversible and will delete all your data.</p>
-            <input type="password" id="passwordForDelete" placeholder="Enter password to confirm">
-            <button id="deleteAccountBtn" class="btn btn-danger">Delete My Account</button>
-        </div>
+        <button id="saveChangesBottomBtn" class="btn btn-primary">Save Changes</button>
     </div>
 
     <script type="module">
         // Firebase imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-        import { getAuth, signOut, onAuthStateChanged, updateEmail, updatePassword, reauthenticateWithCredential, EmailAuthProvider, deleteUser } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
-        import { getFirestore, collection, query, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
         // Your web app's Firebase configuration
         const firebaseConfig = {
@@ -169,16 +182,20 @@
         const userIdDisplay = document.getElementById('userIdDisplay');
         const authButton = document.getElementById('authButton');
 
-        const newEmailInput = document.getElementById('newEmailInput');
-        const currentPasswordForEmail = document.getElementById('currentPasswordForEmail');
-        const updateEmailBtn = document.getElementById('updateEmailBtn');
+        // Input fields
+        const firstNameInput = document.getElementById('firstNameInput');
+        const lastNameInput = document.getElementById('lastNameInput');
+        const emailInput = document.getElementById('emailInput'); // This will be read-only
+        const landlinePhoneInput = document.getElementById('landlinePhoneInput');
+        const cellPhoneInput = document.getElementById('cellPhoneInput');
+        const canTextCellCheckbox = document.getElementById('canTextCellCheckbox');
+        const linkedinUrlInput = document.getElementById('linkedinUrlInput');
+        const portfolioWebsiteInput = document.getElementById('portfolioWebsiteInput');
+        const githubUrlInput = document.getElementById('githubUrlInput');
 
-        const newPasswordInput = document.getElementById('newPasswordInput');
-        const currentPasswordForPassword = document.getElementById('currentPasswordForPassword');
-        const updatePasswordBtn = document.getElementById('updatePasswordBtn');
-
-        const passwordForDelete = document.getElementById('passwordForDelete');
-        const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+        // Buttons
+        const saveChangesTopBtn = document.getElementById('saveChangesTopBtn');
+        const saveChangesBottomBtn = document.getElementById('saveChangesBottomBtn');
 
         // --- Utility Functions ---
         function showLoading() {
@@ -208,6 +225,20 @@
             }, 5000);
         }
 
+        function isValidEmail(email) {
+            // Basic regex for email validation
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
+        function isValidUrl(url) {
+            try {
+                new URL(url);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
         // --- Authentication Logic ---
         function handleAuthStateChange(user) {
             if (user) {
@@ -226,6 +257,8 @@
                     }
                 };
                 console.log("User signed in:", userId);
+                emailInput.value = user.email || ''; // Set email as read-only from auth
+                loadUserInfo(); // Load user info from Firestore
             } else {
                 userId = null;
                 userIdDisplay.textContent = 'Not Logged In';
@@ -253,146 +286,125 @@
             }
         }
 
-        async function reauthenticateUser(password) {
-            const user = auth.currentUser;
-            if (!user || !user.email) {
-                showMessage('User not logged in or email not available for reauthentication.', 'error');
-                return false;
+        // --- Firestore Operations for User Info ---
+        function getUserInfoDocRef() {
+            if (!db || !userId) {
+                console.error("Firestore DB or User ID not initialized.");
+                return null;
             }
-            const credential = EmailAuthProvider.credential(user.email, password);
-            try {
-                await reauthenticateWithCredential(user, credential);
-                return true;
-            } catch (error) {
-                showMessage('Reauthentication failed: ' + error.message, 'error');
-                console.error("Reauthentication error:", error);
-                return false;
+            return doc(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/userInfo`, 'profile');
+        }
+
+        function loadUserInfo() {
+            const docRef = getUserInfoDocRef();
+            if (docRef) {
+                onSnapshot(docRef, (docSnapshot) => {
+                    if (docSnapshot.exists()) {
+                        const data = docSnapshot.data();
+                        firstNameInput.value = data.firstName || '';
+                        lastNameInput.value = data.lastName || '';
+                        // emailInput is already set from auth, but ensure consistency
+                        if (data.email && data.email !== emailInput.value) {
+                            emailInput.value = data.email;
+                        }
+                        landlinePhoneInput.value = data.landlinePhone || '';
+                        cellPhoneInput.value = data.cellPhone || '';
+                        canTextCellCheckbox.checked = data.canTextCell || false;
+                        linkedinUrlInput.value = data.linkedinUrl || '';
+                        portfolioWebsiteInput.value = data.portfolioWebsite || '';
+                        githubUrlInput.value = data.github || '';
+                        showMessage('User information loaded.', 'info');
+                    } else {
+                        showMessage('No user information found. Please fill in your details.', 'info');
+                    }
+                }, (error) => {
+                    showMessage('Error loading user information: ' + error.message, 'error');
+                    console.error("Error listening to user info: ", error);
+                });
+            } else {
+                showMessage('User info Firestore not ready.', 'error');
             }
         }
 
-        // --- Update Email ---
-        updateEmailBtn.addEventListener('click', async () => {
-            const newEmail = newEmailInput.value.trim();
-            const currentPassword = currentPasswordForEmail.value.trim();
-            const user = auth.currentUser;
-
-            if (!user) {
-                showMessage('No user logged in.', 'error');
-                return;
-            }
-            if (!newEmail || !currentPassword) {
-                showMessage('Please enter new email and current password.', 'error');
-                return;
-            }
-            if (newEmail === user.email) {
-                showMessage('New email is the same as current email.', 'info');
+        async function saveUserInfo() {
+            if (!userId) {
+                showMessage('Please log in to save your information.', 'error');
                 return;
             }
 
-            showLoading();
-            try {
-                const reauthenticated = await reauthenticateUser(currentPassword);
-                if (reauthenticated) {
-                    await updateEmail(user, newEmail);
-                    showMessage('Email updated successfully!', 'success');
-                    newEmailInput.value = '';
-                    currentPasswordForEmail.value = '';
-                }
-            } catch (error) {
-                showMessage('Failed to update email: ' + error.message, 'error');
-                console.error("Update email error:", error);
-            } finally {
-                hideLoading();
-            }
-        });
+            const firstName = firstNameInput.value.trim();
+            const lastName = lastNameInput.value.trim();
+            const email = emailInput.value.trim(); // Read-only, but still validate
+            const landlinePhone = landlinePhoneInput.value.trim();
+            const cellPhone = cellPhoneInput.value.trim();
+            const canTextCell = canTextCellCheckbox.checked;
+            const linkedinUrl = linkedinUrlInput.value.trim();
+            const portfolioWebsite = portfolioWebsiteInput.value.trim();
+            const github = githubUrlInput.value.trim();
 
-        // --- Update Password ---
-        updatePasswordBtn.addEventListener('click', async () => {
-            const newPassword = newPasswordInput.value.trim();
-            const currentPassword = currentPasswordForPassword.value.trim();
-            const user = auth.currentUser;
-
-            if (!user) {
-                showMessage('No user logged in.', 'error');
+            // Validation
+            if (!firstName) {
+                showMessage('First Name is required.', 'error');
                 return;
             }
-            if (!newPassword || !currentPassword) {
-                showMessage('Please enter new password and current password.', 'error');
+            if (firstName.length > 50) {
+                showMessage('First Name cannot exceed 50 characters.', 'error');
                 return;
             }
-            if (newPassword.length < 6) {
-                showMessage('New password must be at least 6 characters long.', 'error');
+            if (!lastName) {
+                showMessage('Last Name is required.', 'error');
+                return;
+            }
+            if (lastName.length > 50) {
+                showMessage('Last Name cannot exceed 50 characters.', 'error');
+                return;
+            }
+            if (!email || !isValidEmail(email)) {
+                showMessage('A valid Email Address is required.', 'error');
+                return;
+            }
+            if (linkedinUrl && !isValidUrl(linkedinUrl)) {
+                showMessage('Invalid LinkedIn URL.', 'error');
+                return;
+            }
+            if (portfolioWebsite && !isValidUrl(portfolioWebsite)) {
+                showMessage('Invalid Portfolio Website URL.', 'error');
+                return;
+            }
+            if (github && !isValidUrl(github)) {
+                showMessage('Invalid Github URL.', 'error');
                 return;
             }
 
             showLoading();
             try {
-                const reauthenticated = await reauthenticateUser(currentPassword);
-                if (reauthenticated) {
-                    await updatePassword(user, newPassword);
-                    showMessage('Password updated successfully!', 'success');
-                    newPasswordInput.value = '';
-                    currentPasswordForPassword.value = '';
+                const docRef = getUserInfoDocRef();
+                if (docRef) {
+                    await setDoc(docRef, {
+                        firstName: firstName,
+                        lastName: lastName,
+                        email: email, // Save the email from auth
+                        landlinePhone: landlinePhone,
+                        cellPhone: cellPhone,
+                        canTextCell: canTextCell,
+                        linkedinUrl: linkedinUrl,
+                        portfolioWebsite: portfolioWebsite,
+                        github: github,
+                        updatedAt: serverTimestamp()
+                    }, { merge: true }); // Use merge to update existing fields or add new ones
+                    showMessage('Your information has been saved successfully!', 'success');
                 }
-            } catch (error) {
-                showMessage('Failed to update password: ' + error.message, 'error');
-                console.error("Update password error:", error);
+            } catch (e) {
+                showMessage('Error saving information: ' + e.message, 'error');
+                console.error("Error saving document: ", e);
             } finally {
                 hideLoading();
             }
-        });
+        }
 
-        // --- Delete Account ---
-        deleteAccountBtn.addEventListener('click', async () => {
-            const password = passwordForDelete.value.trim();
-            const user = auth.currentUser;
-
-            if (!user) {
-                showMessage('No user logged in.', 'error');
-                return;
-            }
-            if (!password) {
-                showMessage('Please enter your password to confirm account deletion.', 'error');
-                return;
-            }
-
-            if (!confirm('Are you absolutely sure you want to delete your account? This action is irreversible and will delete ALL your data.')) {
-                return;
-            }
-
-            showLoading();
-            try {
-                const reauthenticated = await reauthenticateUser(password);
-                if (reauthenticated) {
-                    // Delete user's Firestore data first
-                    const userCollections = ['jobExperience', 'coverLetters', 'userPrompts', 'promptEditHistory']; // Add any other user-specific collections
-                    for (const colName of userCollections) {
-                        const colRef = collection(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/${colName}`);
-                        const q = query(colRef);
-                        const snapshot = await getDocs(q);
-                        const deletePromises = [];
-                        snapshot.forEach(docSnapshot => {
-                            deletePromises.push(deleteDoc(doc(db, colRef.path, docSnapshot.id)));
-                        });
-                        await Promise.all(deletePromises);
-                        console.log(`Deleted all documents from ${colName} for user ${userId}`);
-                    }
-
-                    // Then delete the user from Authentication
-                    await deleteUser(user);
-                    showMessage('Account and all associated data deleted successfully. Redirecting to login.', 'success');
-                    passwordForDelete.value = '';
-                    setTimeout(() => {
-                        window.location.href = 'login.html';
-                    }, 2000);
-                }
-            } catch (error) {
-                showMessage('Failed to delete account: ' + error.message, 'error');
-                console.error("Delete account error:", error);
-            } finally {
-                hideLoading();
-            }
-        });
+        // --- Event Listeners ---
+        saveChangesTopBtn.addEventListener('click', saveUserInfo);
+        saveChangesBottomBtn.addEventListener('click', saveUserInfo);
 
         window.onload = initializeFirebase;
     </script>
