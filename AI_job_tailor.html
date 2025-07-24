@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Agent Network</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: "Inter", sans-serif;
+            background-color: #f0f2f5;
+        }
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 1.5rem;
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            resize: vertical;
+            min-height: 150px;
+            margin-bottom: 1rem;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .output-textarea {
+            min-height: 300px; /* Larger for generated content */
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, box-shadow 0.2s;
+        }
+        .btn-primary {
+            background-color: #4f46e5;
+            color: white;
+            box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+        }
+        .btn-primary:hover {
+            background-color: #4338ca;
+            box-shadow: 0 4px 8px rgba(79, 70, 229, 0.3);
+        }
+        .message-box {
+            background-color: #e0f2fe;
+            border: 1px solid #90cdf4;
+            color: #2b6cb0;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #4f46e5;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-6">
+    <div id="loading" class="loading-overlay hidden">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="w-full bg-gray-800 p-4 shadow-md">
+        <nav class="mx-auto flex justify-between items-center max-w-full px-4">
+            <div class="flex space-x-8">
+                <a href="index.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Job Editor</a>
+                <a href="tailor.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Resume Tailor</a>
+                <a href="coverletter.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Cover Letters</a>
+                <a href="cover_letter_writer.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">AI Cover Letter</a>
+                <a href="AI_Job_Tailor.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">AI Agent Network</a>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="authButton" class="btn bg-gray-600 text-white hover:bg-gray-500">Loading...</button>
+                <a href="user_settings.html" class="text-white hover:text-indigo-300 transition duration-300" title="User Settings">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                        <path fill-rule="evenodd" d="M11.078 2.25c-.917 0-1.699.663-1.85 1.567L9.05 4.889c-1.407.419-2.653 1.144-3.692 2.042l-1.32-.792a1.875 1.875 0 0 0-2.418.969L1.376 10.56c-.406.954.103 2.016 1.153 2.46l1.32.59a8.246 8.246 0 0 1 2.199.787l.165 1.48c.165.917.947 1.567 1.85 1.567h2.004c.917 0 1.699-.663 1.85-1.567l.165-1.48a8.23 8.23 0 0 1 2.199-.787l1.32-.59c1.05-.445 1.559-1.507 1.153-2.46l-.65-1.516a1.875 1.875 0 0 0-2.418-.969l-1.32.792a8.23 8.23 0 0 1-3.692-2.042l-.165-1.486A1.875 1.875 0 0 0 11.078 2.25ZM10.5 11.25a1.5 1.5 0 1 0 3 0 1.5 1.5 0 0 0-3 0Z" clip-rule="evenodd" />
+                    </svg>
+                </a>
+            </div>
+        </nav>
+    </div>
+
+    <div class="container">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">AI Agent Network: URL to Application</h1>
+
+        <p class="text-sm text-gray-600 mb-4 text-center">Your User ID: <span id="userIdDisplay" class="font-semibold text-gray-800">Loading...</span></p>
+
+        <div id="message-box" class="hidden message-box mb-4" role="alert">
+            <span id="message-content"></span>
+        </div>
+
+        <h2 class="text-xl font-semibold text-gray-700 mb-3">Job Posting URL:</h2>
+        <input type="url" id="jobUrlInput" placeholder="e.g., https://www.linkedin.com/jobs/view/..." class="w-full p-3 border rounded-md shadow-sm mb-4">
+
+        <button id="runAgentNetworkBtn" class="btn btn-primary mb-6">Run AI Agent Network</button>
+
+        <h2 class="text-xl font-semibold text-gray-700 mb-3">Extracted Job Description:</h2>
+        <p class="text-sm text-gray-600 mb-2">
+            Remote Status: <span id="remoteStatusDisplay" class="font-semibold text-gray-800">N/A</span> | 
+            Location: <span id="locationDisplay" class="font-semibold text-gray-800">N/A</span>
+        </p>
+        <textarea id="extractedJobDescriptionOutput" class="output-textarea" readonly placeholder="The AI will extract the job description from the URL here."></textarea>
+
+        <h2 class="text-xl font-semibold text-gray-700 mb-3">Company Context:</h2>
+        <textarea id="companyContextOutput" class="output-textarea" readonly placeholder="AI-researched company context will appear here."></textarea>
+
+        <h2 class="text-xl font-semibold text-gray-700 mb-3">Tailored Resume Suggestions:</h2>
+        <textarea id="tailoredResumeOutput" class="output-textarea" readonly placeholder="AI-tailored resume suggestions will appear here."></textarea>
+
+        <h2 class="text-xl font-semibold text-gray-700 mb-3">Generated Cover Letter Draft:</h2>
+        <textarea id="generatedCoverLetterOutput" class="output-textarea" readonly placeholder="AI-generated cover letter draft will appear here."></textarea>
+    </div>
+
+    <script type="module">
+        // Firebase imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, query, addDoc, doc, setDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+
+        // Your web app's Firebase configuration - MUST BE THE SAME AS YOUR OTHER PAGES
+        const firebaseConfig = {
+            apiKey: window.FIREBASE_API_KEY, // Injected by server.js
+            authDomain: "jobdata-c7f32.firebaseapp.com",
+            projectId: "jobdata-c7f32",
+            storageBucket: "jobdata-c7f32.firebasestorage.app",
+            messagingSenderId: "534346265582",
+            appId: "1:534346265582:web:40af2358628940ced154ff"
+        };
+
+        const APP_ID_FOR_HEROKU = firebaseConfig.projectId; 
+
+        // Firebase instances
+        let app;
+        let db;
+        let auth;
+        let userId = null; 
+
+        let jobData = []; // User's job experiences from Firestore
+        let coverLettersData = []; // User's cover letters from Firestore
+        let userPrompts = []; // Universal user prompts from Firestore
+        let promptStates = {}; // Client-side state for enabled/disabled prompts { promptId: boolean }
+
+        // Hardcoded default prompts (can be reused or specific to this page if needed)
+        const defaultPrompts = [
+            { id: 'default-an-1', promptText: 'Ensure the output is concise and professional.' },
+            { id: 'default-an-2', promptText: 'Prioritize skills and experiences directly mentioned in the job description.' }
+        ];
+
+        const loadingOverlay = document.getElementById('loading');
+        const userIdDisplay = document.getElementById('userIdDisplay');
+        const jobUrlInput = document.getElementById('jobUrlInput');
+        const runAgentNetworkBtn = document.getElementById('runAgentNetworkBtn');
+        const extractedJobDescriptionOutput = document.getElementById('extractedJobDescriptionOutput');
+        const companyContextOutput = document.getElementById('companyContextOutput'); // New element
+        const tailoredResumeOutput = document.getElementById('tailoredResumeOutput');
+        const generatedCoverLetterOutput = document.getElementById('generatedCoverLetterOutput');
+        const authButton = document.getElementById('authButton'); 
+
+        // New elements for location/remote status
+        const remoteStatusDisplay = document.getElementById('remoteStatusDisplay');
+        const locationDisplay = document.getElementById('locationDisplay');
+
+        // --- Utility Functions ---
+        function showLoading(message = "Processing with AI agents...") {
+            extractedJobDescriptionOutput.value = "";
+            companyContextOutput.value = ""; // Clear new output
+            tailoredResumeOutput.value = "";
+            generatedCoverLetterOutput.value = "";
+            remoteStatusDisplay.textContent = "N/A"; // Clear new display
+            locationDisplay.textContent = "N/A"; // Clear new display
+            showMessage(message, 'info');
+            loadingOverlay.classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            loadingOverlay.classList.add('hidden');
+        }
+
+        function showMessage(message, type = 'info') {
+            const messageBox = document.getElementById('message-box');
+            const messageContent = document.getElementById('message-content');
+            messageContent.textContent = message;
+            messageBox.classList.remove('hidden', 'bg-blue-100', 'bg-green-100', 'bg-red-100', 'border-blue-400', 'border-green-400', 'border-red-400', 'text-blue-700', 'text-green-700', 'text-red-700');
+
+            if (type === 'success') {
+                messageBox.classList.add('bg-green-100', 'border-green-400', 'text-green-700');
+            } else if (type === 'error') {
+                messageBox.classList.add('bg-red-100', 'border-red-400', 'text-red-700');
+            } else { // info
+                messageBox.classList.add('bg-blue-100', 'border-blue-400', 'text-blue-700');
+            }
+            messageBox.classList.remove('hidden');
+            setTimeout(() => {
+                messageBox.classList.add('hidden'); 
+            }, 5000);
+        }
+
+        // Simple tokenizer (reused from other pages)
+        function tokenizeAndFilter(text) {
+            const stopwords = new Set([
+                "a", "an", "and", "are", "as", "at", "be", "but", "by", "for", "if", "in", "into", "is", "it",
+                "no", "not", "of", "on", "or", "such", "that", "the", "their", "then", "there", "these", "they",
+                "this", "to", "was", "will", "with", "from", "you", "your", "we", "our", "us", "i", "my", "me",
+                "he", "she", "it", "him", "her", "his", "hers", "its", "they", "them", "their", "theirs", "what",
+                "when", "where", "who", "whom", "whose", "why", "how", "had", "has", "have", "do", "does", "did",
+                "can", "could", "would", "should", "may", "might", "must", "about", "above", "across", "after",
+                "against", "along", "among", "around", "before", "behind", "below", "beneath", "beside", "between",
+                "beyond", "during", "except", "inside", "like", "near", "off", "on", "onto", "out", "outside",
+                "over", "past", "round", "since", "through", "to", "under", "up", "upon", "within", "without",
+                "via", "also", "very", "much", "more", "most", "less", "least", "just", "only", "even", "indeed",
+                "actually", "really", "so", "too", "well", "away", "back", "down", "forward", "here", "in", "off",
+                "on", "out", "over", "still", "then", "there", "under", "up", "when", "where", "while", "why", "yet",
+                "experience", "responsibilities", "skills", "ability", "proficient", "strong", "proven", "demonstrated",
+                "manage", "lead", "develop", "implement", "create", "drive", "optimize", "support", "collaborate"
+            ]);
+            return text.toLowerCase()
+                       .replace(/[^a-z0-9\s]/g, '') 
+                       .split(/\s+/) 
+                       .filter(word => word.length > 2 && !stopwords.has(word)); 
+        }
+
+        // --- Authentication Logic ---
+        function handleAuthStateChange(user) {
+            if (user) {
+                userId = user.uid;
+                userIdDisplay.textContent = user.email || user.uid; 
+                authButton.textContent = 'Log Out';
+                authButton.onclick = async () => {
+                    showLoading("Logging out...");
+                    try {
+                        await signOut(auth);
+                        window.location.href = 'login.html'; 
+                    } catch (error) {
+                        showMessage('Logout failed: ' + error.message, 'error');
+                        console.error("Logout error:", error);
+                        hideLoading();
+                    }
+                };
+                console.log("User signed in:", userId);
+                setupJobDataListener();
+                setupCoverLettersListener();
+                setupUserPromptsListener();
+            } else {
+                userId = null;
+                userIdDisplay.textContent = 'Not Logged In';
+                authButton.textContent = 'Log In';
+                authButton.onclick = () => {
+                    window.location.href = 'login.html'; 
+                };
+                console.log("No user signed in. Redirecting to login.");
+                window.location.href = 'login.html'; 
+            }
+            hideLoading();
+        }
+
+        // --- Firebase Initialization and Data Loading ---
+        function getJobCollectionRef() {
+            if (!db || !userId) {
+                console.error("Firestore DB or User ID not initialized.");
+                return null;
+            }
+            return collection(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/jobExperience`);
+        }
+
+        function getCoverLettersCollectionRef() {
+            if (!db || !userId) {
+                console.error("Firestore DB or User ID not initialized.");
+                return null;
+            }
+            return collection(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/coverLetters`);
+        }
+
+        function getPromptsCollectionRef() {
+            if (!db || !userId) {
+                console.error("Firestore DB or User ID not initialized.");
+                return null;
+            }
+            return collection(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/userPrompts`);
+        }
+
+        function setupJobDataListener() {
+            const colRef = getJobCollectionRef();
+            if (colRef) {
+                onSnapshot(query(colRef), (snapshot) => {
+                    jobData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    console.log(`Loaded ${jobData.length} job experiences.`);
+                }, (error) => {
+                    showMessage('Error fetching job experiences: ' + error.message, 'error');
+                    console.error("Error listening to job experiences: ", error);
+                });
+            } else {
+                showMessage('Job data Firestore not ready.', 'error');
+            }
+        }
+
+        function setupCoverLettersListener() {
+            const colRef = getCoverLettersCollectionRef();
+            if (colRef) {
+                onSnapshot(query(colRef), (snapshot) => {
+                    coverLettersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    console.log(`Loaded ${coverLettersData.length} cover letters.`);
+                }, (error) => {
+                    showMessage('Error fetching cover letters: ' + error.message, 'error');
+                    console.error("Error listening to cover letters: ", error);
+                });
+            } else {
+                showMessage('Cover letter Firestore not ready.', 'error');
+            }
+        }
+
+        function setupUserPromptsListener() {
+            const colRef = getPromptsCollectionRef();
+            if (colRef) {
+                onSnapshot(query(colRef), (snapshot) => {
+                    userPrompts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: 'user' }));
+                    console.log(`Loaded ${userPrompts.length} user prompts.`);
+                    userPrompts.forEach(p => {
+                        if (promptStates[p.id] === undefined) {
+                            promptStates[p.id] = true; // Default to enabled
+                        }
+                    });
+                }, (error) => {
+                    showMessage('Error fetching user prompts: ' + error.message, 'error');
+                    console.error("Error listening to user prompts: ", error);
+                });
+            } else {
+                showMessage('User prompts Firestore not ready.', 'error');
+            }
+        }
+
+        async function initializeFirebaseAndLoadData() {
+            showLoading("Initializing Firebase and loading user data..."); 
+            try {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                onAuthStateChanged(auth, handleAuthStateChange); 
+            } catch (error) {
+                showMessage('Error initializing Firebase: ' + error.message, 'error');
+                console.error("Firebase initialization error:", error);
+                hideLoading();
+            }
+        }
+
+        // --- AI Agent Network Functions ---
+
+        /**
+         * Agent 1: Fetches content from a given URL using a direct fetch.
+         * Note: The 'browsing' tool is for the LLM to decide to use. For direct client-side fetching,
+         * a standard fetch API call is used.
+         * @param {string} url The URL to fetch.
+         * @returns {Promise<string>} The text content of the URL.
+         */
+        async function fetchUrlContent(url) {
+            showMessage("Agent 1: Fetching URL content...", 'info');
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status} - Could not access URL directly. Ensure URL is public and accessible.`);
+                }
+                const textContent = await response.text();
+                return textContent;
+            } catch (error) {
+                console.error("Error fetching URL content:", error);
+                throw new Error("Could not read URL content. Please ensure it's a valid, accessible URL.");
+            }
+        }
+
+        /**
+         * Agent 2: Classifies if content is a job posting, extracts JD, remote status, and location.
+         * @param {string} content The raw text content of a webpage.
+         * @returns {Promise<{isJobPosting: boolean, jobDescription: string, isRemote: boolean, location: string}>}
+         */
+        async function classifyJobPosting(content) {
+            showMessage("Agent 2: Classifying job posting and extracting details...", 'info');
+            const prompt = `Analyze the following text content. Determine if it is a job posting.
+            If it is a job posting:
+            1. Extract the full, clean job description.
+            2. Determine if the role is explicitly "remote" or "work from home".
+            3. If it is NOT remote, extract the specific location (city, state, country, or specific office address if present).
+
+            If it is NOT a job posting:
+            1. Set 'isJobPosting' to false.
+            2. Explain briefly why it's not a job posting in the 'jobDescription' field.
+            3. Set 'isRemote' to false and 'location' to 'N/A'.
+
+            Provide your response in JSON format with the following fields:
+            'isJobPosting' (boolean)
+            'jobDescription' (string, contains the full JD or reason if not a job posting)
+            'isRemote' (boolean)
+            'location' (string, e.g., "New York, NY", "London, UK", "N/A" if remote or not found)
+
+            Text Content:
+            ${content.substring(0, 15000)} // Limit content to avoid exceeding token limits
+            `;
+
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: prompt }] }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            isJobPosting: { type: "BOOLEAN" },
+                            jobDescription: { type: "STRING" },
+                            isRemote: { type: "BOOLEAN" },
+                            location: { type: "STRING" }
+                        },
+                        required: ["isJobPosting", "jobDescription", "isRemote", "location"]
+                    }
+                }
+            };
+
+            try {
+                const apiKey = window.FIREBASE_API_KEY; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const jsonString = result.candidates[0].content.parts[0].text;
+                    const parsedJson = JSON.parse(jsonString);
+                    return parsedJson;
+                } else {
+                    console.error("Job classification AI response malformed:", result);
+                    throw new Error("Failed to classify job posting or extract details.");
+                }
+            } catch (error) {
+                console.error("Error classifying job posting:", error);
+                throw new Error("Could not classify URL content as a job posting or extract details.");
+            }
+        }
+
+        /**
+         * Agent 3: Researches the company and provides context.
+         * @param {string} companyName The name of the company to research.
+         * @returns {Promise<string>} A summary of the company context.
+         */
+        async function researchCompany(companyName) {
+            showMessage("Agent 3: Researching company context...", 'info');
+            if (!companyName || companyName.trim() === "") {
+                return "No company name provided for research.";
+            }
+
+            const searchPrompt = `Perform a concise web search for "${companyName} company overview" and "${companyName} mission". Summarize the key information about the company, including its industry, mission, values, and any recent notable achievements or news. Keep the summary to 3-5 sentences.`;
+
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: searchPrompt }] }],
+                tools: [{
+                    functionDeclarations: [
+                        {
+                            name: "google_search",
+                            description: "A tool to search the internet.",
+                            parameters: {
+                                type: "OBJECT",
+                                properties: {
+                                    queries: {
+                                        type: "ARRAY",
+                                        items: { type: "STRING" }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }]
+            };
+
+            try {
+                const apiKey = window.FIREBASE_API_KEY; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    
+                    // The model might return a function call to google_search.
+                    // In a real interactive agent, you'd execute the tool and send the result back.
+                    // For this direct client-side example, we'll assume the model directly
+                    // provides the summary based on its internal knowledge or a simulated search.
+                    // If the model *does* return a tool call, this simple fetch won't execute it.
+                    // For robust tool use, a server-side component to handle tool execution is ideal.
+                    
+                    // For now, let's assume the model generates the summary directly.
+                    return result.candidates[0].content.parts[0].text;
+
+                } else {
+                    console.error("Company research AI response malformed:", result);
+                    return "Could not retrieve company context.";
+                }
+            } catch (error) {
+                console.error("Error researching company:", error);
+                return "Failed to research company context.";
+            }
+        }
+
+        /**
+         * Agent 4: Generates tailored resume suggestions (reusing logic from tailor.html).
+         * @param {string} jobDescription The extracted job description.
+         * @param {string} companyContext Optional company context.
+         * @returns {Promise<string>} Tailored resume suggestions.
+         */
+        async function generateTailoredResume(jobDescription, companyContext = "") {
+            showMessage("Agent 4: Generating tailored resume suggestions...", 'info');
+            if (jobData.length === 0) {
+                showMessage("No job experiences loaded. Cannot tailor resume.", 'error');
+                throw new Error("Missing job experience data.");
+            }
+
+            // Extract weighted keywords from job description (reused from tailor.html)
+            const weightedRegex = /\*\*([a-zA-Z0-9\s]+?)\*\*/g;
+            let match;
+            const rawWeightedKeywords = [];
+            let cleanJobDescription = jobDescription;
+
+            while ((match = weightedRegex.exec(jobDescription)) !== null) {
+                rawWeightedKeywords.push(match[1]); 
+                cleanJobDescription = cleanJobDescription.replace(match[0], match[1]); 
+            }
+
+            const weightedJobDescWords = new Set(tokenizeAndFilter(rawWeightedKeywords.join(' ')));
+            const normalJobDescWords = new Set(tokenizeAndFilter(cleanJobDescription));
+            const allJobDescKeywords = new Set([...weightedJobDescWords, ...normalJobDescWords]);
+
+            const scoredJobData = [];
+            jobData.forEach(job => {
+                let jobScore = 0;
+                const allJobContentTokens = new Set();
+                allJobContentTokens.add(...tokenizeAndFilter(job["Job Skills"] || ''));
+                allJobContentTokens.add(...tokenizeAndFilter(job["Job Description"] || ''));
+
+                (job.projects || []).forEach(subproject => {
+                    allJobContentTokens.add(...tokenizeAndFilter(subproject.subprojectSkills || ''));
+                    allJobContentTokens.add(...tokenizeAndFilter(subproject.subprojectDescription || ''));
+                    allJobContentTokens.add(...tokenizeAndFilter(subproject.subprojectRole || ''));
+                    allJobContentTokens.add(...tokenizeAndFilter(subproject.subprojectName || ''));
+                });
+
+                allJobDescKeywords.forEach(keyword => {
+                    if (allJobContentTokens.has(keyword)) {
+                        jobScore += weightedJobDescWords.has(keyword) ? 5 : 2; 
+                    }
+                });
+                if (jobScore > 0) { 
+                    scoredJobData.push({ job: job, score: jobScore });
+                }
+            });
+            scoredJobData.sort((a, b) => b.score - a.score); 
+            const topRelevantJobs = scoredJobData.slice(0, 3); 
+
+            let relevantExperienceString = '';
+            if (topRelevantJobs.length > 0) {
+                relevantExperienceString = "\n\n**My Most Relevant Job Experiences (for factual details):**\n";
+                topRelevantJobs.forEach(item => {
+                    relevantExperienceString += `- **${item.job["Job Name"]}** at **${item.job["Job Company"]}** (${item.job["Job Date Start"]} - ${item.job["Job Date End"]})\n`;
+                    if (item.job["Job Description"]) {
+                        relevantExperienceString += `  Summary: ${item.job["Job Description"]}\n`;
+                    }
+                    if (item.job["Job Skills"]) {
+                        relevantExperienceString += `  Overall Skills: ${item.job["Job Skills"]}\n`;
+                    }
+                    (item.job.projects || []).forEach(subproject => {
+                        relevantExperienceString += `  - Subproject: "${subproject.subprojectName || 'N/A'}", Role: "${subproject.subprojectRole || 'N/A'}" (${subproject.subprojectDateStart || ''} - ${subproject.subprojectDateEnd || ''})\n`;
+                        if (subproject.subprojectDescription) {
+                            relevantExperienceString += `    Description: ${subproject.subprojectDescription}\n`;
+                        }
+                        if (subproject.subprojectSkills) {
+                            relevantExperienceString += `    Skills: ${subproject.subprojectSkills}\n`;
+                        }
+                    });
+                    relevantExperienceString += '\n'; 
+                });
+            }
+
+            let promptForTailoring = `You are an expert resume writer. Your task is to provide tailored resume suggestions based on the provided job description and my relevant job experiences.`;
+            promptForTailoring += `\n\n**Job Description:**\n${jobDescription}`;
+            promptForTailoring += `\n\n${relevantExperienceString}`; 
+            
+            if (companyContext) {
+                promptForTailoring += `\n\n**Company Context (for tone and alignment):**\n${companyContext}`;
+                promptForTailoring += `\n- Integrate insights from the company context to align the resume's tone and emphasis with the company's values or mission.`;
+            }
+
+            promptForTailoring += `\n\n**Instructions for Tailoring:**`;
+            promptForTailoring += `\n- Analyze the job description and identify key skills, responsibilities, and qualifications.`;
+            promptForTailoring += `\n- For each of my "Most Relevant Job Experiences," suggest specific bullet points or phrases that highlight how my experience directly addresses the job description's requirements.`;
+            promptForTailoring += `\n- Focus on quantifiable achievements and results where possible.`;
+            promptForTailoring += `\n- Suggest ways to rephrase existing resume bullet points to better align with the job description's language.`;
+            promptForTailoring += `\n- If applicable, suggest a brief, impactful summary or objective statement tailored to this specific job.`;
+            promptForTailoring += `\n- Present suggestions clearly, perhaps using bullet points or numbered lists for easy integration into a resume.`;
+
+            const enabledPrompts = [...defaultPrompts, ...userPrompts].filter(p => promptStates[p.id]);
+            if (enabledPrompts.length > 0) {
+                promptForTailoring += `\n\n**Additional AI Directives (from enabled prompts):**\n`;
+                enabledPrompts.forEach((p, index) => {
+                    promptForTailoring += `- ${p.promptText}\n`;
+                });
+            }
+
+            try {
+                const chatHistoryTailoring = [];
+                chatHistoryTailoring.push({ role: "user", parts: [{ text: promptForTailoring }] });
+                const payloadTailoring = { contents: chatHistoryTailoring };
+                const apiKey = window.FIREBASE_API_KEY; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const responseTailoring = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payloadTailoring)
+                });
+
+                const resultTailoring = await responseTailoring.json();
+
+                if (resultTailoring.candidates && resultTailoring.candidates.length > 0 &&
+                    resultTailoring.candidates[0].content && resultTailoring.candidates[0].content.parts &&
+                    resultTailoring.candidates[0].content.parts.length > 0) {
+                    return resultTailoring.candidates[0].content.parts[0].text;
+                } else {
+                    console.error("Resume tailoring AI response malformed:", resultTailoring);
+                    throw new Error("Failed to generate resume suggestions.");
+                }
+            } catch (error) {
+                console.error("Error generating tailored resume:", error);
+                throw new Error("Could not generate tailored resume suggestions.");
+            }
+        }
+
+        /**
+         * Agent 5: Generates a cover letter draft (reusing logic from cover_letter_writer.html).
+         * @param {string} jobDescription The extracted job description.
+         * @param {string} companyContext Optional company context.
+         * @returns {Promise<string>} Cover letter draft.
+         */
+        async function generateCoverLetter(jobDescription, companyContext = "") {
+            showMessage("Agent 5: Generating cover letter draft...", 'info');
+            if (jobData.length === 0 && coverLettersData.length === 0) {
+                showMessage("No job experiences or past cover letters loaded. Cannot generate cover letter.", "error");
+                throw new Error("Missing job experience or cover letter data.");
+            }
+
+            // Extract weighted keywords from job description (reused from cover_letter_writer.html)
+            const weightedRegex = /\*\*([a-zA-Z0-9\s]+?)\*\*/g;
+            let match;
+            const rawWeightedKeywords = [];
+            let cleanJobDescription = jobDescription;
+
+            while ((match = weightedRegex.exec(jobDescription)) !== null) {
+                rawWeightedKeywords.push(match[1]); 
+                cleanJobDescription = cleanJobDescription.replace(match[0], match[1]); 
+            }
+
+            const weightedJobDescWords = new Set(tokenizeAndFilter(rawWeightedKeywords.join(' ')));
+            const normalJobDescWords = new Set(tokenizeAndFilter(cleanJobDescription));
+            const allJobDescKeywords = new Set([...weightedJobDescWords, ...normalJobDescWords]);
+
+            const scoredJobData = [];
+            jobData.forEach(job => {
+                let jobScore = 0;
+                const allJobContentTokens = new Set();
+                allJobContentTokens.add(...tokenizeAndFilter(job["Job Skills"] || ''));
+                allJobContentTokens.add(...tokenizeAndFilter(job["Job Description"] || ''));
+
+                (job.projects || []).forEach(subproject => {
+                    allJobContentTokens.add(...tokenizeAndFilter(subproject.subprojectSkills || ''));
+                    allJobContentTokens.add(...tokenizeAndFilter(subproject.subprojectDescription || ''));
+                    allJobContentTokens.add(...tokenizeAndFilter(subproject.subprojectRole || ''));
+                    allJobContentTokens.add(...tokenizeAndFilter(subproject.subprojectName || ''));
+                });
+
+                allJobDescKeywords.forEach(keyword => {
+                    if (allJobContentTokens.has(keyword)) {
+                        jobScore += weightedJobDescWords.has(keyword) ? 5 : 2; 
+                    }
+                });
+                if (jobScore > 0) { 
+                    scoredJobData.push({ job: job, score: jobScore });
+                }
+            });
+            scoredJobData.sort((a, b) => b.score - a.score); 
+            const topRelevantJobs = scoredJobData.slice(0, 3); 
+
+            let relevantExperienceString = '';
+            if (topRelevantJobs.length > 0) {
+                relevantExperienceString = "\n\n**My Most Relevant Job Experiences (for factual details):**\n";
+                topRelevantJobs.forEach(item => {
+                    relevantExperienceString += `- **${item.job["Job Name"]}** at **${item.job["Job Company"]}** (${item.job["Job Date Start"]} - ${item.job["Job Date End"]})\n`;
+                    if (item.job["Job Description"]) {
+                        relevantExperienceString += `  Summary: ${item.job["Job Description"]}\n`;
+                    }
+                    if (item.job["Job Skills"]) {
+                        relevantExperienceString += `  Overall Skills: ${item.job["Job Skills"]}\n`;
+                    }
+                    (item.job.projects || []).forEach(subproject => {
+                        relevantExperienceString += `  - Subproject: "${subproject.subprojectName || 'N/A'}", Role: "${subproject.subprojectRole || 'N/A'}" (${subproject.subprojectDateStart || ''} - ${subproject.subprojectDateEnd || ''})\n`;
+                        if (subproject.subprojectDescription) {
+                            relevantExperienceString += `    Description: ${subproject.subprojectDescription}\n`;
+                        }
+                        if (subproject.subprojectSkills) {
+                            relevantExperienceString += `    Skills: ${subproject.subprojectSkills}\n`;
+                        }
+                    });
+                    relevantExperienceString += '\n'; 
+                });
+            }
+
+            const scoredCoverLetters = [];
+            coverLettersData.forEach(cl => {
+                let clScore = 0;
+                const clContentWords = new Set(tokenizeAndFilter(cl.content || ''));
+                const clTitleWords = new Set(tokenizeAndFilter(cl.title || ''));
+
+                allJobDescKeywords.forEach(keyword => {
+                    if (clContentWords.has(keyword)) {
+                        clScore += weightedJobDescWords.has(keyword) ? 3 : 1; 
+                    }
+                    if (clTitleWords.has(keyword)) { 
+                        clScore += weightedJobDescWords.has(keyword) ? 2 : 1;
+                    }
+                });
+                if (clScore > 0) {
+                    scoredCoverLetters.push({ cl: cl, score: clScore });
+                }
+            });
+            scoredCoverLetters.sort((a, b) => b.score - a.score);
+            const topRelevantCoverLetters = scoredCoverLetters.slice(0, 2); 
+
+            let relevantCoverLettersString = '';
+            if (topRelevantCoverLetters.length > 0) {
+                relevantCoverLettersString = "\n\n**Examples of Past Cover Letter Phrasing and Tone (for inspiration only):**\n";
+                topRelevantCoverLetters.forEach(item => {
+                    let cleanedContent = item.cl.content;
+                    cleanedContent = cleanedContent.replace(/at\s+([A-Z][a-zA-Z\s]+?)(?=[\.\,\!\;\)])/g, 'at a relevant company');
+                    cleanedContent = cleanedContent.replace(/([A-Z][a-zA-Z\s]+?)\s+at\s+([A-Z][a-zA-Z\s]+?)(?=[\.\,\!\;\)])/g, 'a relevant role at a company');
+
+                    relevantCoverLettersString += `- Title: "${item.cl.title}"\n  Snippet: ${cleanedContent.substring(0, 300)}...\n`; 
+                });
+            }
+
+            let promptForCoverLetter = `You are an expert career coach and cover letter writer. Your task is to draft a professional and compelling cover letter for a job application.`;
+            promptForCoverLetter += `\n\n**Job Description:**\n${jobDescription}`;
+            promptForCoverLetter += `\n\n${relevantExperienceString}`; 
+            promptForCoverLetter += `${relevantCoverLettersString}`; 
+            
+            if (companyContext) {
+                promptForCoverLetter += `\n\n**Company Context (for tone and alignment):**\n${companyContext}`;
+                promptForCoverLetter += `\n- Integrate insights from the company context to align the cover letter's tone and emphasis with the company's values or mission.`;
+            }
+
+            promptForCoverLetter += `\n\n**Instructions for Drafting:**`;
+            promptForCoverLetter += `\n- Draft a concise and impactful cover letter (around 3-4 paragraphs) that directly addresses the requirements of the job description.`;
+            promptForCoverLetter += `\n- **Crucially, when mentioning your specific job history (roles, companies, dates), ONLY use the information provided under "My Most Relevant Job Experiences." Do NOT infer or use company names or exact job titles from the "Examples of Past Cover Letter Phrasing and Tone." The past cover letter examples are for tone and phrasing inspiration ONLY.**`;
+            promptForCoverLetter += `\n- Highlight how your skills and experiences from your "My Most Relevant Job Experiences" make you an ideal candidate.`;
+            promptForCoverLetter += `\n- Identify key responsibilities from the job description and provide how you can meet those responsibilities`;
+            promptForCoverLetter += `\n- Focus on specific achievements and quantifiable results where possible from my background.`;
+            promptForCoverLetter += `\n- Maintain a professional, confident, and enthusiastic tone. Display empathy and tones of leadership`;
+            promptForCoverLetter += `\n- Do not just copy-paste text; synthesize and adapt it.`;
+            promptForCoverLetter += `\n- **For the introductory paragraph, lead with a strong statement about my experience, such as "I am an experienced project manager..." instead of phrases like "it is my express interest" or similar direct statements of interest.**`;
+            promptForCoverLetter += `\n- **Ensure the sentence structure flows naturally and avoids overly dense or keyword-stuffed phrasing. Prioritize readability and clear communication over keyword repetition.**`;
+            promptForCoverLetter += `\n- Start directly with the salutation "Dear Hiring Manager,".`;
+            promptForCoverLetter += `\n- End with a professional closing.`;
+
+            const enabledPrompts = [...defaultPrompts, ...userPrompts].filter(p => promptStates[p.id]);
+            if (enabledPrompts.length > 0) {
+                promptForCoverLetter += `\n\n**Additional AI Directives (from enabled prompts):**\n`;
+                enabledPrompts.forEach((p, index) => {
+                    promptForCoverLetter += `- ${p.promptText}\n`;
+                });
+            }
+
+            try {
+                const chatHistoryCoverLetter = [];
+                chatHistoryCoverLetter.push({ role: "user", parts: [{ text: promptForCoverLetter }] });
+                const payloadCoverLetter = { contents: chatHistoryCoverLetter };
+                const apiKey = window.FIREBASE_API_KEY; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const responseCoverLetter = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payloadCoverLetter)
+                });
+
+                const resultCoverLetter = await responseCoverLetter.json();
+
+                if (resultCoverLetter.candidates && resultCoverLetter.candidates.length > 0 &&
+                    resultCoverLetter.candidates[0].content && resultCoverLetter.candidates[0].content.parts &&
+                    resultCoverLetter.candidates[0].content.parts.length > 0) {
+                    return resultCoverLetter.candidates[0].content.parts[0].text;
+                } else {
+                    console.error("Cover letter AI response malformed:", resultCoverLetter);
+                    throw new Error("Failed to generate cover letter draft.");
+                }
+            } catch (error) {
+                console.error("Error generating cover letter:", error);
+                throw new Error("Could not generate cover letter draft.");
+            }
+        }
+
+        /**
+         * Orchestrates the AI Agent Network workflow.
+         */
+        async function runAgentNetwork() {
+            showLoading();
+            const jobUrl = jobUrlInput.value.trim();
+
+            if (!jobUrl) {
+                showMessage("Please enter a URL to begin the AI Agent Network process.", "info");
+                hideLoading();
+                return;
+            }
+
+            try {
+                // Agent 1: Fetch URL Content
+                const urlContent = await fetchUrlContent(jobUrl);
+                
+                // Agent 2: Classify Job Posting (Enhanced)
+                const classificationResult = await classifyJobPosting(urlContent);
+
+                if (!classificationResult.isJobPosting) {
+                    extractedJobDescriptionOutput.value = `Content from URL is NOT a job posting. Reason: ${classificationResult.jobDescription || 'N/A'}`;
+                    remoteStatusDisplay.textContent = "N/A";
+                    locationDisplay.textContent = "N/A";
+                    showMessage("The provided URL does not appear to be a job posting.", "error");
+                    hideLoading();
+                    return;
+                }
+
+                const jobDescription = classificationResult.jobDescription;
+                const isRemote = classificationResult.isRemote;
+                const location = classificationResult.location;
+
+                extractedJobDescriptionOutput.value = jobDescription;
+                remoteStatusDisplay.textContent = isRemote ? "Yes" : "No";
+                locationDisplay.textContent = location;
+                showMessage("Job description and details extracted successfully!", "success");
+
+                // Attempt to extract company name for research
+                const companyMatch = jobDescription.match(/at\s+([A-Z][a-zA-Z\s,\-]+?)\s*(?:inc\.|llc|ltd|corp|corporation|group|solutions|technologies|company|co\.)?/i);
+                let companyName = companyMatch && companyMatch[1] ? companyMatch[1].trim() : '';
+
+                // If company name is still not found, try to extract from URL or prompt AI
+                if (!companyName) {
+                    try {
+                        const urlObj = new URL(jobUrl);
+                        const hostnameParts = urlObj.hostname.split('.');
+                        // Try to get a reasonable company name from hostname (e.g., "google" from "careers.google.com")
+                        if (hostnameParts.length >= 2) {
+                            companyName = hostnameParts[hostnameParts.length - 2];
+                            // Basic cleanup for common domain suffixes if they are part of the name
+                            if (companyName.toLowerCase() === 'co' && hostnameParts.length >=3) {
+                                companyName = hostnameParts[hostnameParts.length - 3];
+                            }
+                            companyName = companyName.charAt(0).toUpperCase() + companyName.slice(1); // Capitalize
+                        }
+                    } catch (e) {
+                        console.warn("Could not parse company name from URL:", e);
+                    }
+                }
+                
+                // Agent 3: Research Company (only if a company name is found)
+                let companyContext = "No company context generated.";
+                if (companyName) {
+                    companyContext = await researchCompany(companyName);
+                }
+                companyContextOutput.value = companyContext;
+                showMessage("Company context generated!", "success");
+
+                // Agent 4: Generate Tailored Resume
+                const tailoredResume = await generateTailoredResume(jobDescription, companyContext);
+                tailoredResumeOutput.value = tailoredResume;
+                showMessage("Tailored resume suggestions generated!", "success");
+
+                // Agent 5: Generate Cover Letter
+                const coverLetter = await generateCoverLetter(jobDescription, companyContext);
+                generatedCoverLetterOutput.value = coverLetter;
+                showMessage("Cover letter draft generated!", "success");
+
+            } catch (error) {
+                showMessage(`AI Agent Network failed: ${error.message}`, 'error');
+                console.error("AI Agent Network Orchestration Error:", error);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // --- Event Listeners ---
+        runAgentNetworkBtn.addEventListener('click', runAgentNetwork);
+
+        window.onload = initializeFirebaseAndLoadData;
+    </script>
+</body>
+</html>

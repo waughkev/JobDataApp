@@ -11,38 +11,30 @@
             background-color: #f0f2f5;
         }
         .container {
-            max-width: 1000px;
+            max-width: 900px;
             margin: 2rem auto;
             padding: 1.5rem;
             background-color: #ffffff;
             border-radius: 0.75rem;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
-        th, td {
-            padding: 0.75rem;
-            text-align: left;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        th {
-            background-color: #f9fafb;
-            font-weight: 600;
-            color: #374151;
-        }
-        tr:hover {
-            background-color: #f3f4f6;
-        }
-        input[type="text"], textarea {
+        input[type="text"], input[type="date"], textarea {
             width: 100%;
-            padding: 0.5rem;
+            padding: 0.75rem;
             border: 1px solid #d1d5db;
-            border-radius: 0.375rem;
-            font-size: 0.875rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+        }
+        textarea {
             resize: vertical;
+            min-height: 100px;
         }
         .btn {
-            padding: 0.6rem 1.2rem;
+            padding: 0.75rem 1.5rem;
             border-radius: 0.5rem;
-            font-weight: 500;
+            font-weight: 600;
             cursor: pointer;
             transition: background-color 0.2s, box-shadow 0.2s;
         }
@@ -55,19 +47,56 @@
             background-color: #4338ca;
             box-shadow: 0 4px 8px rgba(79, 70, 229, 0.3);
         }
-        .btn-danger {
-            background-color: #ef4444;
-            color: white;
+        .message-box {
+            background-color: #e0f2fe;
+            border: 1px solid #90cdf4;
+            color: #2b6cb0;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
         }
-        .btn-danger:hover {
-            background-color: #dc2626;
+        .job-card, .project-card {
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
-        .btn-success {
-            background-color: #22c55e;
-            color: white;
+        .job-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
         }
-        .btn-success:hover {
-            background-color: #16a34a;
+        .job-card-title {
+            font-weight: 600;
+            color: #374151;
+        }
+        .job-actions button {
+            margin-left: 0.5rem;
+            padding: 0.3rem 0.7rem;
+            font-size: 0.8rem;
+        }
+        .project-card {
+            margin-top: 0.5rem;
+            padding-left: 1.5rem;
+            border-left: 3px solid #a5b4fc;
+        }
+        .project-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        .project-card-title {
+            font-weight: 500;
+            color: #4b5563;
+        }
+        .project-actions button {
+            margin-left: 0.5rem;
+            padding: 0.2rem 0.5rem;
+            font-size: 0.7rem;
         }
         .loading-overlay {
             position: fixed;
@@ -92,43 +121,6 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
-        /* New styles for subprojects */
-        .subproject-section {
-            background-color: #f0f4f8; /* Light blue-gray for subproject background */
-            padding: 1rem;
-            border-radius: 0.5rem;
-            margin-top: 1rem;
-            border: 1px solid #cbd5e0;
-        }
-        .subproject-item {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 0.75rem;
-            padding: 0.75rem;
-            border: 1px dashed #a0aec0;
-            border-radius: 0.375rem;
-            margin-bottom: 0.75rem;
-            background-color: #ffffff;
-        }
-        .subproject-item:last-child {
-            margin-bottom: 0;
-        }
-        .subproject-item label {
-            font-weight: 500;
-            color: #4a5568;
-            grid-column: span 2; /* Labels span full width */
-        }
-        .subproject-item input, .subproject-item textarea {
-            background-color: #edf2f7; /* Lighter background for subproject inputs */
-            font-size: 0.875rem;
-            padding: 0.4rem;
-        }
-        .subproject-actions {
-            grid-column: span 2;
-            display: flex;
-            justify-content: flex-end;
-            gap: 0.5rem;
-        }
     </style>
 </head>
 <body class="bg-gray-100 p-6">
@@ -143,6 +135,7 @@
                 <a href="tailor.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Resume Tailor</a>
                 <a href="coverletter.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Cover Letters</a>
                 <a href="cover_letter_writer.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">AI Cover Letter</a>
+                <a href="AI_Job_Tailor.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">AI Agent Network</a>
             </div>
             <div class="flex items-center space-x-4">
                 <button id="authButton" class="btn bg-gray-600 text-white hover:bg-gray-500">Loading...</button>
@@ -160,23 +153,25 @@
 
         <p class="text-sm text-gray-600 mb-4 text-center">Your User ID: <span id="userIdDisplay" class="font-semibold text-gray-800">Loading...</span></p>
 
-        <div id="message-box" class="hidden bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded relative mb-4" role="alert">
-            <span class="block sm:inline" id="message-content"></span>
-            <span class="absolute top-0 bottom-0 right-0 px-4 py-3 cursor-pointer" onclick="document.getElementById('message-box').classList.add('hidden')">
-                <svg class="fill-current h-6 w-6 text-blue-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.103l-2.651 3.746a1.2 1.2 0 1 1-1.697-1.697l2.758-3.899L5.65 6.551a1.2 1.2 0 0 1 1.697-1.697L10 8.897l2.651-3.746a1.2 1.2 0 0 1 1.697 1.697l-2.758 3.899 2.758 3.899z"/></svg>
-            </span>
+        <div id="message-box" class="hidden message-box mb-4" role="alert">
+            <span id="message-content"></span>
         </div>
 
-        <div class="mb-6 flex justify-between items-center">
-            <button id="addRowBtn" class="btn btn-primary mr-2">Add New Job Experience</button>
-            <button id="saveBtn" class="btn btn-success">Force Save All Data</button>
+        <div class="mb-6 p-4 border rounded-lg bg-gray-50">
+            <h2 class="text-xl font-semibold text-gray-700 mb-3">Add New Job Experience</h2>
+            <input type="text" id="jobNameInput" placeholder="Job Title (e.g., Senior Software Engineer)">
+            <input type="text" id="jobCompanyInput" placeholder="Company Name (e.g., Google)">
+            <input type="date" id="jobDateStartInput" title="Start Date">
+            <input type="date" id="jobDateEndInput" title="End Date (leave blank if current)">
+            <textarea id="jobDescriptionInput" placeholder="Job Description (e.g., Led a team of 5 engineers...)"></textarea>
+            <input type="text" id="jobSkillsInput" placeholder="Key Skills (comma-separated, e.g., Python, SQL, Agile)">
+            <button id="addJobBtn" class="btn btn-primary">Add Job</button>
         </div>
 
-        <div class="overflow-x-auto rounded-lg shadow">
-            <div class="min-w-full bg-white rounded-lg p-4" id="jobList">
-                <p class="text-center py-4 text-gray-500">Loading job data...</p>
-                <!-- Job items will be populated here by JavaScript -->
-            </div>
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">Your Job Experiences</h2>
+        <div id="jobList" class="space-y-4">
+            <p class="text-center text-gray-500">Loading job experiences...</p>
+            <!-- Job experiences will be rendered here by JavaScript -->
         </div>
     </div>
 
@@ -184,11 +179,11 @@
         // Firebase imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
         import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, query, addDoc, doc, setDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
-        // Your web app's Firebase configuration - MUST BE THE SAME AS YOUR OTHER PAGES
+        // Your web app's Firebase configuration
         const firebaseConfig = {
-            apiKey: window.FIREBASE_API_KEY,
+            apiKey: window.FIREBASE_API_KEY, // Injected by server.js
             authDomain: "jobdata-c7f32.firebaseapp.com",
             projectId: "jobdata-c7f32",
             storageBucket: "jobdata-c7f32.firebasestorage.app",
@@ -196,21 +191,25 @@
             appId: "1:534346265582:web:40af2358628940ced154ff"
         };
 
-        const APP_ID_FOR_HEROKU = firebaseConfig.projectId; 
-
         // Firebase instances
         let app;
         let db;
         let auth;
         let userId = null; 
 
-        let jobData = []; 
-        let currentEditingJobs = new Set(); 
+        let jobExperiences = []; // Stores job data from Firestore
 
         const loadingOverlay = document.getElementById('loading');
         const userIdDisplay = document.getElementById('userIdDisplay');
-        const jobListContainer = document.getElementById('jobList');
-        const authButton = document.getElementById('authButton'); // Get the auth button
+        const jobNameInput = document.getElementById('jobNameInput');
+        const jobCompanyInput = document.getElementById('jobCompanyInput');
+        const jobDateStartInput = document.getElementById('jobDateStartInput');
+        const jobDateEndInput = document.getElementById('jobDateEndInput');
+        const jobDescriptionInput = document.getElementById('jobDescriptionInput');
+        const jobSkillsInput = document.getElementById('jobSkillsInput');
+        const addJobBtn = document.getElementById('addJobBtn');
+        const jobList = document.getElementById('jobList');
+        const authButton = document.getElementById('authButton');
 
         // --- Utility Functions ---
         function showLoading() {
@@ -240,339 +239,17 @@
             }, 5000);
         }
 
-        // --- Firebase Initialization and Data Loading ---
-        function getJobCollectionRef() {
-            if (!db || !userId) {
-                console.error("Firestore DB or User ID not initialized.");
-                return null;
-            }
-            // Use the authenticated user's UID for the collection path
-            return collection(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/jobExperience`);
-        }
-
-        function renderJobList() {
-            jobListContainer.innerHTML = ''; 
-
-            if (jobData.length === 0) {
-                jobListContainer.innerHTML = '<p class="text-center py-4 text-gray-500">No job entries. Add a new job experience to get started!</p>';
-                return;
-            }
-
-            jobData.sort((a, b) => {
-                const dateA = new Date(a["Job Date End"] && a["Job Date End"].toLowerCase() !== 'present' ? a["Job Date End"] : a["Job Date Start"]);
-                const dateB = new Date(b["Job Date End"] && b["Job Date End"].toLowerCase() !== 'present' ? b["Job Date End"] : b["Job Date Start"]);
-                return dateB - dateA;
-            });
-
-            jobData.forEach(job => {
-                const jobDiv = document.createElement('div');
-                jobDiv.className = 'bg-white rounded-lg shadow-md p-6 mb-6 border border-gray-200';
-                jobDiv.dataset.docId = job.id;
-
-                jobDiv.innerHTML = `
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Job Name</label>
-                            <input type="text" data-field="Job Name" value="${job["Job Name"] || ''}" class="mt-1 block w-full p-2 border rounded-md shadow-sm">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Job Company</label>
-                            <input type="text" data-field="Job Company" value="${job["Job Company"] || ''}" class="mt-1 block w-full p-2 border rounded-md shadow-sm">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Job Date Start</label>
-                            <input type="text" data-field="Job Date Start" value="${job["Job Date Start"] || ''}" class="mt-1 block w-full p-2 border rounded-md shadow-sm">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Job Date End</label>
-                            <input type="text" data-field="Job Date End" value="${job["Job Date End"] || ''}" class="mt-1 block w-full p-2 border rounded-md shadow-sm">
-                        </div>
-                    </div>
-                    <div class="flex justify-end gap-2 mb-4">
-                        <button class="btn btn-danger text-sm" data-action="delete-job">Delete Job</button>
-                    </div>
-
-                    <h3 class="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Subprojects / Roles within this Company</h3>
-                    <div class="subproject-section" data-subprojects-container>
-                        <!-- Subprojects will be rendered here -->
-                    </div>
-                    <div class="mt-4 flex justify-end">
-                        <button class="btn btn-primary text-sm" data-action="add-subproject">Add Subproject / Role</button>
-                    </div>
-                `;
-
-                jobDiv.querySelectorAll('input[data-field]').forEach(input => {
-                    let timeout = null;
-                    input.addEventListener('input', (e) => {
-                        clearTimeout(timeout);
-                        const docId = jobDiv.dataset.docId;
-                        const field = e.target.dataset.field;
-                        const value = e.target.value;
-                        
-                        currentEditingJobs.add(docId); 
-
-                        timeout = setTimeout(async () => {
-                            const updatedJob = { ...job, [field]: value };
-                            const jobIndex = jobData.findIndex(item => item.id === job.id);
-                            if (jobIndex !== -1) {
-                                jobData[jobIndex] = updatedJob; // Update local data immediately
-                            }
-                            await updateJobInFirestore(docId, { [field]: value });
-                            currentEditingJobs.delete(docId); 
-                        }, 750); 
-                    });
-                });
-
-                jobDiv.querySelector('button[data-action="delete-job"]').addEventListener('click', () => {
-                    deleteJobFromFirestore(job.id);
-                });
-
-                const subprojectsContainer = jobDiv.querySelector('[data-subprojects-container]');
-                renderSubprojects(job.id, job.projects || [], subprojectsContainer);
-
-                jobDiv.querySelector('button[data-action="add-subproject"]').addEventListener('click', () => {
-                    addSubprojectToJob(job.id);
-                });
-
-                jobListContainer.appendChild(jobDiv);
-            });
-        }
-
-        function renderSubprojects(jobId, subprojects, containerElement) {
-            containerElement.innerHTML = ''; 
-
-            if (!subprojects || subprojects.length === 0) {
-                containerElement.innerHTML = '<p class="text-sm text-gray-600 text-center py-2">No subprojects yet. Click "Add Subproject / Role" below.</p>';
-                return;
-            }
-
-            subprojects.sort((a, b) => {
-                const dateA = new Date(a.subprojectDateEnd && a.subprojectDateEnd.toLowerCase() !== 'present' ? a.subprojectDateEnd : a.subprojectDateStart);
-                const dateB = new Date(b.subprojectDateEnd && b.subprojectDateEnd.toLowerCase() !== 'present' ? b.subprojectDateEnd : b.subprojectDateStart);
-                return dateB - dateA;
-            });
-
-            subprojects.forEach((subproject, subIndex) => {
-                const subprojectId = subproject.id || `temp-${subIndex}-${Date.now()}`; 
-                
-                const subprojectDiv = document.createElement('div');
-                subprojectDiv.className = 'subproject-item';
-                subprojectDiv.dataset.subprojectId = subprojectId; 
-
-                subprojectDiv.innerHTML = `
-                    <label class="col-span-2 text-sm font-medium text-gray-700">Subproject Name</label>
-                    <input type="text" data-subfield="subprojectName" value="${subproject.subprojectName || ''}" class="col-span-2 mt-1 block w-full p-2 border rounded-md shadow-sm">
-                    
-                    <label class="col-span-2 text-sm font-medium text-gray-700">Subproject Role</label>
-                    <input type="text" data-subfield="subprojectRole" value="${subproject.subprojectRole || ''}" class="col-span-2 mt-1 block w-full p-2 border rounded-md shadow-sm">
-
-                    <label class="col-span-2 text-sm font-medium text-gray-700">Subproject Date Start</label>
-                    <input type="text" data-subfield="subprojectDateStart" value="${subproject.subprojectDateStart || ''}" class="col-span-2 mt-1 block w-full p-2 border rounded-md shadow-sm">
-                    
-                    <label class="col-span-2 text-sm font-medium text-gray-700">Subproject Date End</label>
-                    <input type="text" data-subfield="subprojectDateEnd" value="${subproject.subprojectDateEnd || ''}" class="col-span-2 mt-1 block w-full p-2 border rounded-md shadow-sm">
-
-                    <label class="col-span-2 text-sm font-medium text-gray-700">Subproject Description</label>
-                    <textarea data-subfield="subprojectDescription" class="col-span-2 mt-1 block w-full p-2 border rounded-md shadow-sm" rows="3">${subproject.subprojectDescription || ''}</textarea>
-                    
-                    <label class="col-span-2 text-sm font-medium text-gray-700">Subproject Skills (comma-separated)</label>
-                    <textarea data-subfield="subprojectSkills" class="col-span-2 mt-1 block w-full p-2 border rounded-md shadow-sm" rows="2">${subproject.subprojectSkills || ''}</textarea>
-
-                    <div class="subproject-actions">
-                        <button class="btn btn-danger text-xs" data-action="delete-subproject">Delete Subproject</button>
-                    </div>
-                `;
-
-                subprojectDiv.querySelectorAll('input[data-subfield], textarea[data-subfield]').forEach(input => {
-                    let timeout = null;
-                    input.addEventListener('input', (e) => {
-                        clearTimeout(timeout);
-                        const subField = e.target.dataset.subfield;
-                        const value = e.target.value;
-                        
-                        currentEditingJobs.add(jobId);
-
-                        timeout = setTimeout(async () => {
-                            const mainJobIndex = jobData.findIndex(j => j.id === jobId);
-                            if (mainJobIndex !== -1) {
-                                const currentProjects = [...(jobData[mainJobIndex].projects || [])];
-                                const subprojectToUpdateIndex = currentProjects.findIndex(sp => (sp.id === subprojectId) || (subprojectId.startsWith('temp-') && sp.subprojectName === subproject.subprojectName && sp.subprojectRole === subproject.subprojectRole)); 
-
-                                if (subprojectToUpdateIndex !== -1) {
-                                    currentProjects[subprojectToUpdateIndex] = {
-                                        ...currentProjects[subprojectToUpdateIndex],
-                                        [subField]: value
-                                    };
-                                    // Update local data
-                                    jobData[mainJobIndex].projects = currentProjects;
-                                    await updateJobInFirestore(jobId, { projects: currentProjects });
-                                }
-                            }
-                            currentEditingJobs.delete(jobId); 
-                        }, 750); 
-                    });
-                });
-
-                subprojectDiv.querySelector('button[data-action="delete-subproject"]').addEventListener('click', () => {
-                    deleteSubprojectFromJob(jobId, subprojectId);
-                });
-
-                containerElement.appendChild(subprojectDiv);
-            });
-        }
-
-
-        // --- Firestore Functions ---
-
-        async function addJobToFirestore(newJobData) {
-            showLoading();
-            try {
-                const colRef = getJobCollectionRef();
-                if (colRef) {
-                    const defaultSubproject = {
-                        subprojectName: "",
-                        subprojectRole: "",
-                        subprojectDescription: "",
-                        subprojectSkills: "",
-                        subprojectDateStart: "",
-                        subprojectDateEnd: ""
-                    };
-                    const jobWithProjects = { ...newJobData, projects: [defaultSubproject] }; 
-                    await addDoc(colRef, jobWithProjects);
-                    showMessage('New job experience added successfully!', 'success');
-                }
-            } catch (e) {
-                showMessage('Error adding job: ' + e.message, 'error');
-                console.error("Error adding document: ", e);
-            } finally {
-                hideLoading();
-            }
-        }
-
-        async function updateJobInFirestore(docId, updates) {
-            if (currentEditingJobs.has(docId)) {
-            } else {
-                showLoading(); 
-            }
-
-            try {
-                const colRef = getJobCollectionRef();
-                if (colRef) {
-                    await setDoc(doc(colRef, docId), updates, { merge: true }); 
-                }
-            } catch (e) {
-                showMessage('Error updating job: ' + e.message, 'error');
-                console.error("Error updating document: ", e);
-            } finally {
-                if (!currentEditingJobs.has(docId)) { 
-                    hideLoading();
-                }
-            }
-        }
-
-        async function deleteJobFromFirestore(docId) {
-            showLoading();
-            try {
-                const colRef = getJobCollectionRef();
-                if (colRef) {
-                    await deleteDoc(doc(colRef, docId));
-                    showMessage('Job experience deleted successfully!', 'success');
-                }
-            } catch (e) {
-                showMessage('Error deleting job: ' + e.message, 'error');
-                console.error("Error deleting document: ", e);
-            } finally {
-                hideLoading();
-            }
-        }
-
-        async function addSubprojectToJob(jobId) {
-            showLoading();
-            try {
-                const currentJobDoc = jobData.find(job => job.id === jobId);
-                if (!currentJobDoc) {
-                    showMessage('Job not found to add subproject.', 'error');
-                    return;
-                }
-
-                const newSubproject = {
-                    id: crypto.randomUUID(), 
-                    subprojectName: "New Subproject",
-                    subprojectRole: "Role",
-                    subprojectDescription: "",
-                    subprojectSkills: "",
-                    subprojectDateStart: "",
-                    subprojectDateEnd: ""
-                };
-
-                const updatedProjects = [...(currentJobDoc.projects || []), newSubproject];
-                await updateJobInFirestore(jobId, { projects: updatedProjects });
-                showMessage('New subproject added!', 'success');
-            } catch (e) {
-                showMessage('Error adding subproject: ' + e.message, 'error');
-                console.error("Error adding subproject: ", e);
-            } finally {
-                hideLoading();
-            }
-        }
-
-        async function deleteSubprojectFromJob(jobId, subprojectId) {
-            showLoading();
-            try {
-                const currentJobDoc = jobData.find(job => job.id === jobId);
-                if (currentJobDoc) {
-                    const updatedProjects = (currentJobDoc.projects || []).filter(sp => sp.id !== subprojectId);
-                    await updateJobInFirestore(jobId, { projects: updatedProjects });
-                    showMessage('Subproject deleted!', 'success');
-                }
-            } catch (e) {
-                showMessage('Error deleting subproject: ' + e.message, 'error');
-                console.error("Error deleting subproject: ", e);
-            } finally {
-                hideLoading();
-            }
-        }
-
-        function setupFirestoreListener() {
-            const colRef = getJobCollectionRef();
-            if (colRef) {
-                onSnapshot(colRef, (snapshot) => {
-                    const newJobData = [];
-                    snapshot.forEach((doc) => {
-                        newJobData.push({ id: doc.id, ...doc.data() });
-                    });
-                    jobData = newJobData; 
-                    
-                    if (currentEditingJobs.size === 0) {
-                        renderJobList(); 
-                        showMessage('Job data synchronized with cloud.', 'info');
-                    } else {
-                        // If editing, local data is already updated, avoid re-rendering to prevent cursor jumps
-                        // The onSnapshot will eventually trigger a full render once editing stops.
-                    }
-                    hideLoading();
-                }, (error) => {
-                    showMessage('Error fetching real-time updates: ' + error.message, 'error');
-                    console.error("Error listening to Firestore: ", error);
-                    hideLoading();
-                });
-            } else {
-                showMessage('Firestore not ready. Please try refreshing.', 'error');
-                hideLoading();
-            }
-        }
-
         // --- Authentication Logic ---
         function handleAuthStateChange(user) {
             if (user) {
                 userId = user.uid;
-                userIdDisplay.textContent = user.email || user.uid; // Show email if available
+                userIdDisplay.textContent = user.email || user.uid; 
                 authButton.textContent = 'Log Out';
                 authButton.onclick = async () => {
                     showLoading();
                     try {
                         await signOut(auth);
-                        window.location.href = 'login.html'; // Redirect to login after logout
+                        window.location.href = 'login.html'; 
                     } catch (error) {
                         showMessage('Logout failed: ' + error.message, 'error');
                         console.error("Logout error:", error);
@@ -580,27 +257,53 @@
                     }
                 };
                 console.log("User signed in:", userId);
-                setupFirestoreListener(); // Start listening to Firestore once authenticated
+                setupJobExperiencesListener();
             } else {
                 userId = null;
                 userIdDisplay.textContent = 'Not Logged In';
                 authButton.textContent = 'Log In';
                 authButton.onclick = () => {
-                    window.location.href = 'login.html'; // Redirect to login page
+                    window.location.href = 'login.html'; 
                 };
                 console.log("No user signed in. Redirecting to login.");
-                window.location.href = 'login.html'; // Redirect if not logged in
+                window.location.href = 'login.html'; 
             }
             hideLoading();
         }
 
+        // --- Firebase Initialization and Data Loading ---
+        function getJobExperienceCollectionRef() {
+            if (!db || !userId) {
+                console.error("Firestore DB or User ID not initialized.");
+                return null;
+            }
+            return collection(db, `artifacts/${firebaseConfig.projectId}/users/${userId}/jobExperience`);
+        }
+
+        function setupJobExperiencesListener() {
+            const colRef = getJobExperienceCollectionRef();
+            if (colRef) {
+                onSnapshot(query(colRef), (snapshot) => {
+                    jobExperiences = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    console.log(`Loaded ${jobExperiences.length} job experiences.`);
+                    renderJobExperiences(); // Re-render jobs whenever data changes
+                    showMessage('Job data synchronized with cloud.', 'info');
+                }, (error) => {
+                    showMessage('Error fetching job experiences: ' + error.message, 'error');
+                    console.error("Error listening to job experiences: ", error);
+                });
+            } else {
+                showMessage('Job data Firestore not ready.', 'error');
+            }
+        }
+
         async function initializeFirebaseAndLoadData() {
-            showLoading();
+            showLoading(); 
             try {
                 app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getFirestore(app);
-                onAuthStateChanged(auth, handleAuthStateChange); // Set up auth listener
+                onAuthStateChanged(auth, handleAuthStateChange); 
             } catch (error) {
                 showMessage('Error initializing Firebase: ' + error.message, 'error');
                 console.error("Firebase initialization error:", error);
@@ -608,66 +311,369 @@
             }
         }
 
-        document.getElementById('addRowBtn').addEventListener('click', async () => {
-            if (!userId) {
-                showMessage('Please log in to add data.', 'info');
+        // --- Render Job Experiences ---
+        function renderJobExperiences() {
+            jobList.innerHTML = ''; // Clear existing list
+
+            if (jobExperiences.length === 0) {
+                jobList.innerHTML = '<p class="text-center text-gray-500">No job experiences added yet. Use the form above to add your first job!</p>';
                 return;
             }
-            const newJob = {
-                "Job Name": "New Job",
-                "Job Company": "Company Name",
-                "Job Date Start": "",
-                "Job Date End": "Present",
-                "projects": [] 
-            };
-            await addJobToFirestore(newJob);
-        });
 
-        document.getElementById('saveBtn').addEventListener('click', async () => {
+            jobExperiences.forEach(job => {
+                const jobCardDiv = document.createElement('div');
+                jobCardDiv.className = 'job-card';
+                jobCardDiv.dataset.id = job.id;
+
+                const headerDiv = document.createElement('div');
+                headerDiv.className = 'job-card-header';
+                jobCardDiv.appendChild(headerDiv);
+
+                const titleSpan = document.createElement('span');
+                titleSpan.className = 'job-card-title';
+                titleSpan.textContent = `${job["Job Name"]} at ${job["Job Company"]} (${job["Job Date Start"]} - ${job["Job Date End"] || 'Current'})`;
+                headerDiv.appendChild(titleSpan);
+
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'job-actions';
+                headerDiv.appendChild(actionsDiv);
+
+                const editJobBtn = document.createElement('button');
+                editJobBtn.className = 'btn btn-primary text-sm';
+                editJobBtn.textContent = 'Edit Job';
+                editJobBtn.onclick = () => editJob(job.id);
+                actionsDiv.appendChild(editJobBtn);
+
+                const deleteJobBtn = document.createElement('button');
+                deleteJobBtn.className = 'btn bg-red-500 text-white text-sm hover:bg-red-600';
+                deleteJobBtn.textContent = 'Delete Job';
+                deleteJobBtn.onclick = () => deleteJob(job.id);
+                actionsDiv.appendChild(deleteJobBtn);
+
+                const descriptionP = document.createElement('p');
+                descriptionP.className = 'text-gray-700 text-sm mt-2';
+                descriptionP.textContent = job["Job Description"];
+                jobCardDiv.appendChild(descriptionP);
+
+                const skillsP = document.createElement('p');
+                skillsP.className = 'text-gray-600 text-xs mt-1';
+                skillsP.textContent = `Skills: ${job["Job Skills"]}`;
+                jobCardDiv.appendChild(skillsP);
+
+                // Projects section
+                const projectsHeader = document.createElement('h4');
+                projectsHeader.className = 'text-md font-semibold text-gray-700 mt-4 mb-2';
+                projectsHeader.textContent = 'Projects:';
+                jobCardDiv.appendChild(projectsHeader);
+
+                const projectsListDiv = document.createElement('div');
+                projectsListDiv.className = 'projects-list';
+                jobCardDiv.appendChild(projectsListDiv);
+
+                (job.projects || []).forEach(project => {
+                    const projectCardDiv = document.createElement('div');
+                    projectCardDiv.className = 'project-card';
+                    projectCardDiv.dataset.jobId = job.id;
+                    projectCardDiv.dataset.projectId = project.id; // Assuming project has an ID
+
+                    const projectHeaderDiv = document.createElement('div');
+                    projectHeaderDiv.className = 'project-card-header';
+                    projectCardDiv.appendChild(projectHeaderDiv);
+
+                    const projectTitleSpan = document.createElement('span');
+                    projectTitleSpan.className = 'project-card-title';
+                    projectTitleSpan.textContent = `${project.subprojectName} (${project.subprojectDateStart} - ${project.subprojectDateEnd || 'Current'})`;
+                    projectHeaderDiv.appendChild(projectTitleSpan);
+
+                    const projectActionsDiv = document.createElement('div');
+                    projectActionsDiv.className = 'project-actions';
+                    projectHeaderDiv.appendChild(projectActionsDiv);
+
+                    const editProjectBtn = document.createElement('button');
+                    editProjectBtn.className = 'btn btn-primary text-xs';
+                    editProjectBtn.textContent = 'Edit';
+                    editProjectBtn.onclick = () => editProject(job.id, project.id);
+                    projectActionsDiv.appendChild(editProjectBtn);
+
+                    const deleteProjectBtn = document.createElement('button');
+                    deleteProjectBtn.className = 'btn bg-red-500 text-white text-xs hover:bg-red-600';
+                    deleteProjectBtn.textContent = 'Delete';
+                    deleteProjectBtn.onclick = () => deleteProject(job.id, project.id);
+                    projectActionsDiv.appendChild(deleteProjectBtn);
+
+                    const projectRoleP = document.createElement('p');
+                    projectRoleP.className = 'text-gray-700 text-sm mt-1';
+                    projectRoleP.textContent = `Role: ${project.subprojectRole}`;
+                    projectCardDiv.appendChild(projectRoleP);
+
+                    const projectDescriptionP = document.createElement('p');
+                    projectDescriptionP.className = 'text-gray-700 text-sm mt-1';
+                    projectDescriptionP.textContent = `Description: ${project.subprojectDescription}`;
+                    projectCardDiv.appendChild(projectDescriptionP);
+
+                    const projectSkillsP = document.createElement('p');
+                    projectSkillsP.className = 'text-gray-600 text-xs mt-1';
+                    projectSkillsP.textContent = `Skills: ${project.subprojectSkills}`;
+                    projectCardDiv.appendChild(projectSkillsP);
+
+                    projectsListDiv.appendChild(projectCardDiv);
+                });
+
+                const addProjectBtn = document.createElement('button');
+                addProjectBtn.className = 'btn btn-primary text-sm mt-2';
+                addProjectBtn.textContent = 'Add Project';
+                addProjectBtn.onclick = () => addProject(job.id);
+                jobCardDiv.appendChild(addProjectBtn);
+
+                jobList.appendChild(jobCardDiv);
+            });
+        }
+
+        // --- Job Experience Actions ---
+        async function addJobExperience() {
             if (!userId) {
-                showMessage('Please log in to save data.', 'info');
+                showMessage('Please log in to add job experiences.', 'info');
+                return;
+            }
+
+            const jobName = jobNameInput.value.trim();
+            const jobCompany = jobCompanyInput.value.trim();
+            const jobDateStart = jobDateStartInput.value;
+            const jobDateEnd = jobDateEndInput.value;
+            const jobDescription = jobDescriptionInput.value.trim();
+            const jobSkills = jobSkillsInput.value.trim();
+
+            if (!jobName || !jobCompany || !jobDateStart || !jobDescription || !jobSkills) {
+                showMessage('Please fill in all required job fields (Job Title, Company, Start Date, Description, Skills).', 'error');
+                return;
+            }
+
+            showLoading();
+            try {
+                const colRef = getJobExperienceCollectionRef();
+                if (colRef) {
+                    await addDoc(colRef, {
+                        "Job Name": jobName,
+                        "Job Company": jobCompany,
+                        "Job Date Start": jobDateStart,
+                        "Job Date End": jobDateEnd || null,
+                        "Job Description": jobDescription,
+                        "Job Skills": jobSkills,
+                        projects: [], // Initialize with an empty array for projects
+                        createdAt: serverTimestamp()
+                    });
+                    showMessage('Job experience added successfully!', 'success');
+                    // Clear form
+                    jobNameInput.value = '';
+                    jobCompanyInput.value = '';
+                    jobDateStartInput.value = '';
+                    jobDateEndInput.value = '';
+                    jobDescriptionInput.value = '';
+                    jobSkillsInput.value = '';
+                }
+            } catch (e) {
+                showMessage('Error adding job experience: ' + e.message, 'error');
+                console.error("Error adding document: ", e);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function editJob(jobId) {
+            const job = jobExperiences.find(j => j.id === jobId);
+            if (!job) {
+                showMessage('Job not found for editing.', 'error');
+                return;
+            }
+
+            // In a real app, you'd open a modal or navigate to an edit form
+            // For simplicity, we'll prompt for new values
+            const newJobName = prompt("Edit Job Title:", job["Job Name"]);
+            const newJobCompany = prompt("Edit Company Name:", job["Job Company"]);
+            const newJobDateStart = prompt("Edit Start Date (YYYY-MM-DD):", job["Job Date Start"]);
+            const newJobDateEnd = prompt("Edit End Date (YYYY-MM-DD or leave blank):", job["Job Date End"] || '');
+            const newJobDescription = prompt("Edit Job Description:", job["Job Description"]);
+            const newJobSkills = prompt("Edit Job Skills (comma-separated):", job["Job Skills"]);
+
+            if (newJobName === null || newJobCompany === null || newJobDateStart === null || 
+                newJobDescription === null || newJobSkills === null) {
+                showMessage('Job edit cancelled.', 'info');
+                return;
+            }
+
+            showLoading();
+            try {
+                const docRef = doc(db, `artifacts/${firebaseConfig.projectId}/users/${userId}/jobExperience`, jobId);
+                await setDoc(docRef, {
+                    "Job Name": newJobName.trim(),
+                    "Job Company": newJobCompany.trim(),
+                    "Job Date Start": newJobDateStart.trim(),
+                    "Job Date End": newJobDateEnd.trim() || null,
+                    "Job Description": newJobDescription.trim(),
+                    "Job Skills": newJobSkills.trim(),
+                    updatedAt: serverTimestamp()
+                }, { merge: true }); // Use merge to preserve projects array
+                showMessage('Job experience updated successfully!', 'success');
+            } catch (e) {
+                showMessage('Error updating job experience: ' + e.message, 'error');
+                console.error("Error updating document: ", e);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function deleteJob(jobId) {
+            if (!confirm('Are you sure you want to delete this job experience and all its associated projects?')) {
                 return;
             }
             showLoading();
             try {
-                const colRef = getJobCollectionRef();
-                if (colRef) {
-                    const existingFirestoreDocsSnapshot = await getDocs(query(colRef));
-                    const existingFirestoreDocsMap = new Map();
-                    existingFirestoreDocsSnapshot.forEach(doc => {
-                        existingFirestoreDocsMap.set(doc.id, doc.data());
-                    });
-
-                    for (const job of jobData) {
-                        const cleanedProjects = (job.projects || []).map(sp => ({
-                            ...sp,
-                            id: sp.id && !sp.id.startsWith('temp-') ? sp.id : crypto.randomUUID()
-                        }));
-
-                        const jobToSave = { ...job, projects: cleanedProjects };
-                        delete jobToSave.id; 
-
-                        if (job.id && existingFirestoreDocsMap.has(job.id)) {
-                            await setDoc(doc(colRef, job.id), jobToSave, { merge: true });
-                            existingFirestoreDocsMap.delete(job.id); 
-                        } else {
-                            await addDoc(colRef, jobToSave);
-                        }
-                    }
-
-                    for (const docId of existingFirestoreDocsMap.keys()) {
-                        await deleteDoc(doc(colRef, docId));
-                    }
-
-                    showMessage('All data synced with Firestore.', 'success');
-                }
+                const docRef = doc(db, `artifacts/${firebaseConfig.projectId}/users/${userId}/jobExperience`, jobId);
+                await deleteDoc(docRef);
+                showMessage('Job experience deleted successfully!', 'success');
             } catch (e) {
-                showMessage('Error forcing save: ' + e.message, 'error');
-                console.error("Error forcing save:", e);
+                showMessage('Error deleting job experience: ' + e.message, 'error');
+                console.error("Error deleting document: ", e);
             } finally {
                 hideLoading();
             }
-        });
+        }
+
+        // --- Project Actions ---
+        async function addProject(jobId) {
+            const job = jobExperiences.find(j => j.id === jobId);
+            if (!job) {
+                showMessage('Job not found to add project.', 'error');
+                return;
+            }
+
+            const subprojectName = prompt("Project Name:");
+            const subprojectRole = prompt("Your Role in Project:");
+            const subprojectDateStart = prompt("Project Start Date (YYYY-MM-DD):");
+            const subprojectDateEnd = prompt("Project End Date (YYYY-MM-DD or leave blank if current):");
+            const subprojectDescription = prompt("Project Description:");
+            const subprojectSkills = prompt("Project Skills (comma-separated):");
+
+            if (subprojectName === null || subprojectRole === null || subprojectDateStart === null || 
+                subprojectDescription === null || subprojectSkills === null) {
+                showMessage('Project addition cancelled.', 'info');
+                return;
+            }
+
+            if (!subprojectName.trim() || !subprojectRole.trim() || !subprojectDateStart.trim() || 
+                !subprojectDescription.trim() || !subprojectSkills.trim()) {
+                showMessage('Please fill in all required project fields.', 'error');
+                return;
+            }
+
+            showLoading();
+            try {
+                const docRef = doc(db, `artifacts/${firebaseConfig.projectId}/users/${userId}/jobExperience`, jobId);
+                const newProject = {
+                    id: Date.now().toString(), // Simple unique ID for project
+                    subprojectName: subprojectName.trim(),
+                    subprojectRole: subprojectRole.trim(),
+                    subprojectDateStart: subprojectDateStart.trim(),
+                    subprojectDateEnd: subprojectDateEnd.trim() || null,
+                    subprojectDescription: subprojectDescription.trim(),
+                    subprojectSkills: subprojectSkills.trim(),
+                    createdAt: serverTimestamp()
+                };
+
+                const updatedProjects = [...(job.projects || []), newProject];
+
+                await setDoc(docRef, { projects: updatedProjects, updatedAt: serverTimestamp() }, { merge: true });
+                showMessage('Project added successfully!', 'success');
+            } catch (e) {
+                showMessage('Error adding project: ' + e.message, 'error');
+                console.error("Error adding project: ", e);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function editProject(jobId, projectId) {
+            const job = jobExperiences.find(j => j.id === jobId);
+            if (!job || !job.projects) {
+                showMessage('Job or project not found for editing.', 'error');
+                return;
+            }
+            const project = job.projects.find(p => p.id === projectId);
+            if (!project) {
+                showMessage('Project not found for editing.', 'error');
+                return;
+            }
+
+            const newSubprojectName = prompt("Edit Project Name:", project.subprojectName);
+            const newSubprojectRole = prompt("Edit Your Role in Project:", project.subprojectRole);
+            const newSubprojectDateStart = prompt("Edit Project Start Date (YYYY-MM-DD):", project.subprojectDateStart);
+            const newSubprojectDateEnd = prompt("Edit Project End Date (YYYY-MM-DD or leave blank):", project.subprojectDateEnd || '');
+            const newSubprojectDescription = prompt("Edit Project Description:", project.subprojectDescription);
+            const newSubprojectSkills = prompt("Edit Project Skills (comma-separated):", project.subprojectSkills);
+
+            if (newSubprojectName === null || newSubprojectRole === null || newSubprojectDateStart === null ||
+                newSubprojectDescription === null || newSubprojectSkills === null) {
+                showMessage('Project edit cancelled.', 'info');
+                return;
+            }
+
+            showLoading();
+            try {
+                const docRef = doc(db, `artifacts/${firebaseConfig.projectId}/users/${userId}/jobExperience`, jobId);
+                const updatedProjects = (job.projects || []).map(p => {
+                    if (p.id === projectId) {
+                        return {
+                            ...p,
+                            subprojectName: newSubprojectName.trim(),
+                            subprojectRole: newSubprojectRole.trim(),
+                            subprojectDateStart: newSubprojectDateStart.trim(),
+                            subprojectDateEnd: newSubprojectDateEnd.trim() || null,
+                            subprojectDescription: newSubprojectDescription.trim(),
+                            subprojectSkills: newSubprojectSkills.trim(),
+                            updatedAt: serverTimestamp()
+                        };
+                    }
+                    return p;
+                });
+
+                await setDoc(docRef, { projects: updatedProjects, updatedAt: serverTimestamp() }, { merge: true });
+                showMessage('Project updated successfully!', 'success');
+            } catch (e) {
+                showMessage('Error updating project: ' + e.message, 'error');
+                console.error("Error updating project: ", e);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function deleteProject(jobId, projectId) {
+            if (!confirm('Are you sure you want to delete this project?')) {
+                return;
+            }
+            showLoading();
+            try {
+                const job = jobExperiences.find(j => j.id === jobId);
+                if (!job || !job.projects) {
+                    showMessage('Job or project not found for deletion.', 'error');
+                    hideLoading();
+                    return;
+                }
+
+                const docRef = doc(db, `artifacts/${firebaseConfig.projectId}/users/${userId}/jobExperience`, jobId);
+                const updatedProjects = job.projects.filter(p => p.id !== projectId);
+
+                await setDoc(docRef, { projects: updatedProjects, updatedAt: serverTimestamp() }, { merge: true });
+                showMessage('Project deleted successfully!', 'success');
+            } catch (e) {
+                showMessage('Error deleting project: ' + e.message, 'error');
+                console.error("Error deleting project: ", e);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // --- Event Listeners ---
+        addJobBtn.addEventListener('click', addJobExperience);
 
         window.onload = initializeFirebaseAndLoadData;
     </script>
