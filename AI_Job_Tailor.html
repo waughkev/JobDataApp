@@ -144,7 +144,7 @@
         // Firebase imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
         import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, query, addDoc, doc, setDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, query, addDoc, doc, getDoc, setDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
         // Your web app's Firebase configuration - MUST BE THE SAME AS YOUR OTHER PAGES
         const firebaseConfig = {
@@ -167,6 +167,7 @@
         let jobData = []; // User's job experiences from Firestore
         let coverLettersData = []; // User's cover letters from Firestore
         let userPrompts = []; // Universal user prompts from Firestore
+        let userInfo = {}; // User's personal information from Firestore
         let promptStates = {}; // Client-side state for enabled/disabled prompts { promptId: boolean }
 
         // Hardcoded default prompts (can be reused or specific to this page if needed)
@@ -271,6 +272,7 @@
                 setupJobDataListener();
                 setupCoverLettersListener();
                 setupUserPromptsListener();
+                loadUserInfoFromFirestore(); // Load user info
             } else {
                 userId = null;
                 userIdDisplay.textContent = 'Not Logged In';
@@ -307,6 +309,14 @@
                 return null;
             }
             return collection(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/userPrompts`);
+        }
+
+        function getUserInfoDocRef() {
+            if (!db || !userId) {
+                console.error("Firestore DB or User ID not initialized.");
+                return null;
+            }
+            return doc(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/userInfo`, 'profile');
         }
 
         function setupJobDataListener() {
@@ -356,6 +366,20 @@
                 });
             } else {
                 showMessage('User prompts Firestore not ready.', 'error');
+            }
+        }
+
+        async function loadUserInfoFromFirestore() {
+            const docRef = getUserInfoDocRef();
+            if (docRef) {
+                const docSnapshot = await getDoc(docRef);
+                if (docSnapshot.exists()) {
+                    userInfo = docSnapshot.data();
+                    console.log("Loaded user info:", userInfo);
+                } else {
+                    userInfo = {}; // Reset if no info found
+                    console.log("No user info found in Firestore.");
+                }
             }
         }
 
@@ -670,18 +694,37 @@
 
         /**
          * Agent 5: Generates a complete, formatted resume in plain text.
+         * @param {Object} userInfo The user's personal information.
          * @param {Array<Object>} allJobExperiences The user's full job experience data.
          * @param {string} tailoredSuggestions The AI-generated tailored resume suggestions.
          * @param {string} jobDescription The original job description.
          * @param {string} companyContext Optional company context.
          * @returns {Promise<string>} The formatted resume in plain text.
          */
-        async function generateFormattedResume(allJobExperiences, tailoredSuggestions, jobDescription, companyContext = "") {
+        async function generateFormattedResume(userInfo, allJobExperiences, tailoredSuggestions, jobDescription, companyContext = "") {
             showMessage("Agent 5: Generating formatted resume draft...", 'info');
 
             if (allJobExperiences.length === 0) {
                 return "Cannot generate a formatted resume: No job experience data available.";
             }
+
+            // Construct contact info string
+            const userFirstName = userInfo.firstName || "Your First Name";
+            const userLastName = userInfo.lastName || "Your Last Name";
+            const userEmail = userInfo.email || "your.email@example.com";
+            const userLinkedIn = userInfo.linkedinUrl || "https://linkedin.com/in/yourprofile";
+            const userPhone = userInfo.cellPhone || userInfo.landlinePhone || "Your Phone Number";
+            const userPortfolio = userInfo.portfolioWebsite || "";
+            const userGithub = userInfo.github || "";
+
+            let contactInfoString = `${userFirstName} ${userLastName}\n`;
+            contactInfoString += `Title (Craft a title showcasing relevance to the job posting)\n`; // AI will fill this
+            contactInfoString += `Email: ${userEmail}\n`;
+            if (userPhone) contactInfoString += `Phone: ${userPhone}\n`;
+            contactInfoString += `LinkedIn: ${userLinkedIn}\n`;
+            if (userPortfolio) contactInfoString += `Portfolio: ${userPortfolio}\n`;
+            if (userGithub) contactInfoString += `Github: ${userGithub}\n`;
+
 
             // Construct a detailed string of all job experiences for the AI
             let allExperienceDetails = "\n\n**My Complete Job Experiences (for factual details):**\n";
@@ -716,16 +759,19 @@
             **My Complete Job Experiences (for factual details and full context):**
             ${allExperienceDetails}
 
+            **My Personal Information (for Contact Section):**
+            ${contactInfoString}
+
             **Instructions for Resume Generation:**
             - Create a full resume in plain text format.
             - Include the following sections, in this order:
-                1.  **Contact Information:** (Placeholder, as real contact info isn't provided here, suggest "Your Name, Phone, Email, LinkedIn Profile")
+                1.  **Contact Information:** Use the provided "My Personal Information". For the 'Title', craft a title that showcases my relevance to the job posting. Each comma in the provided format should represent a new line.
                 2.  **Summary/Objective:** Create a concise summary tailored to the job description, integrating suggestions if provided.
                 3.  **Work Experience:**
                     - For each relevant job from "My Complete Job Experiences", include Job Title, Company, Location (if known from JD or inferred), and Dates.
                     - Under each job, create 3-5 strong bullet points. These bullet points MUST incorporate the "My Tailored Resume Suggestions" as primary guidance, but also draw from "My Complete Job Experiences" for factual accuracy and additional detail.
                     - Focus on achievements and quantifiable results.
-                4.  **Skills:** Create a comprehensive list of relevant skills, drawing from both your job experiences and the job description. Categorize them if appropriate (e.g., Technical Skills, Soft Skills).
+                4.  **Skills:** Create a comprehensive list of relevant skills, drawing from both my job experiences and the job description. Categorize them if appropriate (e.g., Technical Skills, Soft Skills).
                 5.  **Education:** (Placeholder if not explicitly provided, suggest "Degree, Major, University, Graduation Year")
             - **Formatting:** Use clear headings, bullet points (hyphens or asterisks are fine), and consistent spacing. The output should be ready to be copied into a plain text editor or an ATS-friendly resume builder.
             - **Do NOT include any introductory or concluding conversational text.** Just the resume content.
@@ -755,7 +801,6 @@
 
                 const resultFormattedResume = await responseFormattedResume.json();
 
-                // Corrected access: resultFormattedResume.candidates[0].content.parts[0].text
                 if (resultFormattedResume.candidates && resultFormattedResume.candidates.length > 0 &&
                     resultFormattedResume.candidates[0].content && resultFormattedResume.candidates[0].content.parts &&
                     resultFormattedResume.candidates[0].content.parts.length > 0) {
@@ -1017,7 +1062,8 @@
                 showMessage("Tailored resume suggestions generated!", "success");
 
                 // Agent 5: Generate Formatted Resume
-                const formattedResume = await generateFormattedResume(jobData, tailoredResume, jobDescription, companyContext);
+                // Pass userInfo to the function
+                const formattedResume = await generateFormattedResume(userInfo, jobData, tailoredResume, jobDescription, companyContext);
                 formattedResumeOutput.value = formattedResume;
                 showMessage("Formatted resume draft generated!", "success");
 
