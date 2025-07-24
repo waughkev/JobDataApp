@@ -11,17 +11,14 @@
             background-color: #f0f2f5;
         }
         .container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 2rem auto;
             padding: 1.5rem;
             background-color: #ffffff;
             border-radius: 0.75rem;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
-        input[type="text"],
-        input[type="email"],
-        input[type="tel"],
-        input[type="url"] {
+        input[type="email"], input[type="password"], input[type="text"] {
             width: 100%;
             padding: 0.75rem;
             border: 1px solid #d1d5db;
@@ -29,9 +26,6 @@
             font-size: 1rem;
             margin-bottom: 1rem;
             box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
-        }
-        input[type="checkbox"] {
-            margin-right: 0.5rem;
         }
         .btn {
             padding: 0.75rem 1.5rem;
@@ -48,6 +42,15 @@
         .btn-primary:hover {
             background-color: #4338ca;
             box-shadow: 0 4px 8px rgba(79, 70, 229, 0.3);
+        }
+        .btn-danger {
+            background-color: #ef4444;
+            color: white;
+            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+        }
+        .btn-danger:hover {
+            background-color: #dc2626;
+            box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
         }
         .message-box {
             background-color: #e0f2fe;
@@ -88,12 +91,22 @@
     </div>
 
     <div class="w-full bg-gray-800 p-4 shadow-md">
-        <nav class="mx-auto flex justify-center space-x-8 items-center max-w-full">
-            <a href="index.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Job Editor</a>
-            <a href="tailor.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Resume Tailor</a>
-            <a href="coverletter.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Cover Letters</a>
-            <a href="cover_letter_writer.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">AI Cover Letter</a>
-            <button id="authButton" class="btn bg-gray-600 text-white hover:bg-gray-500 ml-4">Loading...</button>
+        <nav class="mx-auto flex justify-between items-center max-w-full px-4">
+            <div class="flex space-x-8">
+                <a href="index.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Job Editor</a>
+                <a href="tailor.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Resume Tailor</a>
+                <a href="coverletter.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Cover Letters</a>
+                <a href="cover_letter_writer.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">AI Cover Letter</a>
+                <a href="AI_Job_Tailor.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">AI Agent Network</a>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="authButton" class="btn bg-gray-600 text-white hover:bg-gray-500">Loading...</button>
+                <a href="user_settings.html" class="text-white hover:text-indigo-300 transition duration-300" title="User Settings">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+                        <path fill-rule="evenodd" d="M11.078 2.25c-.917 0-1.699.663-1.85 1.567L9.05 4.889c-1.407.419-2.653 1.144-3.692 2.042l-1.32-.792a1.875 1.875 0 0 0-2.418.969L1.376 10.56c-.406.954.103 2.016 1.153 2.46l1.32.59a8.246 8.246 0 0 1 2.199.787l.165 1.48c.165.917.947 1.567 1.85 1.567h2.004c.917 0 1.699-.663 1.85-1.567l.165-1.48a8.23 8.23 0 0 1 2.199-.787l1.32-.59c1.05-.445 1.559-1.507 1.153-2.46l-.65-1.516a1.875 1.875 0 0 0-2.418-.969l-1.32.792a8.23 8.23 0 0 1-3.692-2.042l-.165-1.486A1.875 1.875 0 0 0 11.078 2.25ZM10.5 11.25a1.5 1.5 0 1 0 3 0 1.5 1.5 0 0 0-3 0Z" clip-rule="evenodd" />
+                    </svg>
+                </a>
+            </div>
         </nav>
     </div>
 
@@ -106,61 +119,37 @@
             <span id="message-content"></span>
         </div>
 
-        <button id="saveProfileBtnTop" class="btn btn-primary mb-6 w-full">Save Changes</button>
+        <div class="mb-6 p-4 border rounded-lg bg-gray-50">
+            <h2 class="text-xl font-semibold text-gray-700 mb-3">Update Email</h2>
+            <input type="email" id="newEmailInput" placeholder="New Email Address">
+            <input type="password" id="currentPasswordForEmail" placeholder="Current Password">
+            <button id="updateEmailBtn" class="btn btn-primary">Update Email</button>
+        </div>
 
-        <form id="userProfileForm">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label for="firstName" class="block text-sm font-medium text-gray-700">First Name <span class="text-red-500">*</span></label>
-                    <input type="text" id="firstName" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" maxlength="50" required>
-                </div>
-                <div>
-                    <label for="lastName" class="block text-sm font-medium text-gray-700">Last Name <span class="text-red-500">*</span></label>
-                    <input type="text" id="lastName" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" maxlength="50" required>
-                </div>
-                <div class="md:col-span-2">
-                    <label for="emailAddress" class="block text-sm font-medium text-gray-700">Email Address <span class="text-red-500">*</span></label>
-                    <input type="email" id="emailAddress" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" maxlength="100" required pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$" title="Please enter a valid email address">
-                </div>
-                <div>
-                    <label for="landlinePhoneNumber" class="block text-sm font-medium text-gray-700">Landline Phone Number</label>
-                    <input type="tel" id="landlinePhoneNumber" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" maxlength="20">
-                </div>
-                <div>
-                    <label for="cellPhoneNumber" class="block text-sm font-medium text-gray-700">Cell Phone Number</label>
-                    <input type="tel" id="cellPhoneNumber" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" maxlength="20">
-                </div>
-                <div class="md:col-span-2 flex items-center mb-4">
-                    <input type="checkbox" id="canTextCellPhoneNumber" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
-                    <label for="canTextCellPhoneNumber" class="ml-2 block text-sm text-gray-900">Can we text the Cell Phone Number?</label>
-                </div>
-                <div class="md:col-span-2">
-                    <label for="linkedinURL" class="block text-sm font-medium text-gray-700">LinkedIn URL</label>
-                    <input type="url" id="linkedinURL" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" maxlength="300">
-                </div>
-                <div class="md:col-span-2">
-                    <label for="portfolioWebsite" class="block text-sm font-medium text-gray-700">Portfolio Website</label>
-                    <input type="url" id="portfolioWebsite" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" maxlength="300">
-                </div>
-                <div class="md:col-span-2">
-                    <label for="githubURL" class="block text-sm font-medium text-gray-700">Github URL</label>
-                    <input type="url" id="githubURL" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" maxlength="300">
-                </div>
-            </div>
-        </form>
+        <div class="mb-6 p-4 border rounded-lg bg-gray-50">
+            <h2 class="text-xl font-semibold text-gray-700 mb-3">Update Password</h2>
+            <input type="password" id="newPasswordInput" placeholder="New Password (min 6 characters)">
+            <input type="password" id="currentPasswordForPassword" placeholder="Current Password">
+            <button id="updatePasswordBtn" class="btn btn-primary">Update Password</button>
+        </div>
 
-        <button id="saveProfileBtnBottom" class="btn btn-primary mt-6 w-full">Save Changes</button>
+        <div class="mb-6 p-4 border rounded-lg bg-gray-50">
+            <h2 class="text-xl font-semibold text-gray-700 mb-3">Delete Account</h2>
+            <p class="text-gray-700 mb-4">This action is irreversible and will delete all your data.</p>
+            <input type="password" id="passwordForDelete" placeholder="Enter password to confirm">
+            <button id="deleteAccountBtn" class="btn btn-danger">Delete My Account</button>
+        </div>
     </div>
 
     <script type="module">
         // Firebase imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+        import { getAuth, signOut, onAuthStateChanged, updateEmail, updatePassword, reauthenticateWithCredential, EmailAuthProvider, deleteUser } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
+        import { getFirestore, collection, query, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
-        // Your web app's Firebase configuration - MUST BE THE SAME AS YOUR OTHER PAGES
+        // Your web app's Firebase configuration
         const firebaseConfig = {
-            apiKey: window.FIREBASE_API_KEY,
+            apiKey: window.FIREBASE_API_KEY, // Injected by server.js
             authDomain: "jobdata-c7f32.firebaseapp.com",
             projectId: "jobdata-c7f32",
             storageBucket: "jobdata-c7f32.firebasestorage.app",
@@ -168,32 +157,28 @@
             appId: "1:534346265582:web:40af2358628940ced154ff"
         };
 
-        const APP_ID_FOR_HEROKU = firebaseConfig.projectId; 
+        const APP_ID_FOR_HEROKU = firebaseConfig.projectId;
 
         // Firebase instances
         let app;
-        let db;
         let auth;
-        let userId = null; 
+        let db;
+        let userId = null;
 
-        // Element references
         const loadingOverlay = document.getElementById('loading');
         const userIdDisplay = document.getElementById('userIdDisplay');
         const authButton = document.getElementById('authButton');
-        const messageBox = document.getElementById('message-box');
-        const messageContent = document.getElementById('message-content');
 
-        const firstNameInput = document.getElementById('firstName');
-        const lastNameInput = document.getElementById('lastName');
-        const emailAddressInput = document.getElementById('emailAddress');
-        const landlinePhoneNumberInput = document.getElementById('landlinePhoneNumber');
-        const cellPhoneNumberInput = document.getElementById('cellPhoneNumber');
-        const canTextCellPhoneNumberCheckbox = document.getElementById('canTextCellPhoneNumber');
-        const linkedinURLInput = document.getElementById('linkedinURL');
-        const portfolioWebsiteInput = document.getElementById('portfolioWebsite');
-        const githubURLInput = document.getElementById('githubURL');
-        const saveProfileBtnTop = document.getElementById('saveProfileBtnTop');
-        const saveProfileBtnBottom = document.getElementById('saveProfileBtnBottom');
+        const newEmailInput = document.getElementById('newEmailInput');
+        const currentPasswordForEmail = document.getElementById('currentPasswordForEmail');
+        const updateEmailBtn = document.getElementById('updateEmailBtn');
+
+        const newPasswordInput = document.getElementById('newPasswordInput');
+        const currentPasswordForPassword = document.getElementById('currentPasswordForPassword');
+        const updatePasswordBtn = document.getElementById('updatePasswordBtn');
+
+        const passwordForDelete = document.getElementById('passwordForDelete');
+        const deleteAccountBtn = document.getElementById('deleteAccountBtn');
 
         // --- Utility Functions ---
         function showLoading() {
@@ -205,6 +190,8 @@
         }
 
         function showMessage(message, type = 'info') {
+            const messageBox = document.getElementById('message-box');
+            const messageContent = document.getElementById('message-content');
             messageContent.textContent = message;
             messageBox.classList.remove('hidden', 'bg-blue-100', 'bg-green-100', 'bg-red-100', 'border-blue-400', 'border-green-400', 'border-red-400', 'text-blue-700', 'text-green-700', 'text-red-700');
 
@@ -239,7 +226,6 @@
                     }
                 };
                 console.log("User signed in:", userId);
-                loadUserProfileData(); // Load profile data once authenticated
             } else {
                 userId = null;
                 userIdDisplay.textContent = 'Not Logged In';
@@ -253,14 +239,13 @@
             hideLoading();
         }
 
-        // --- Firebase Initialization ---
         async function initializeFirebase() {
             showLoading();
             try {
                 app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getFirestore(app);
-                onAuthStateChanged(auth, handleAuthStateChange); 
+                onAuthStateChanged(auth, handleAuthStateChange);
             } catch (error) {
                 showMessage('Error initializing Firebase: ' + error.message, 'error');
                 console.error("Firebase initialization error:", error);
@@ -268,136 +253,146 @@
             }
         }
 
-        // --- User Profile Data Handling ---
-        function getUserProfileDocRef() {
-            if (!db || !userId) {
-                console.error("Firestore DB or User ID not initialized.");
-                return null;
+        async function reauthenticateUser(password) {
+            const user = auth.currentUser;
+            if (!user || !user.email) {
+                showMessage('User not logged in or email not available for reauthentication.', 'error');
+                return false;
             }
-            return doc(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/userProfile/profile`);
-        }
-
-        async function loadUserProfileData() {
-            showLoading();
+            const credential = EmailAuthProvider.credential(user.email, password);
             try {
-                const profileDocRef = getUserProfileDocRef();
-                if (!profileDocRef) {
-                    showMessage('Cannot load profile: Firebase not ready.', 'error');
-                    hideLoading();
-                    return;
-                }
-
-                const docSnap = await getDoc(profileDocRef);
-
-                const defaultProfileData = {
-                    firstName: "",
-                    lastName: "",
-                    emailAddress: auth.currentUser ? auth.currentUser.email : "", // Pre-fill with Google email if available
-                    landlinePhoneNumber: "",
-                    cellPhoneNumber: "",
-                    canTextCellPhoneNumber: false,
-                    linkedinURL: "",
-                    portfolioWebsite: "",
-                    githubURL: ""
-                };
-
-                let profileData = defaultProfileData;
-
-                if (docSnap.exists()) {
-                    profileData = { ...defaultProfileData, ...docSnap.data() }; // Merge to ensure all fields are present
-                } else {
-                    // Document doesn't exist, create it with default blank fields
-                    await setDoc(profileDocRef, defaultProfileData);
-                    showMessage('New user profile created with default blank fields.', 'info');
-                }
-
-                // Populate UI fields
-                firstNameInput.value = profileData.firstName || '';
-                lastNameInput.value = profileData.lastName || '';
-                emailAddressInput.value = profileData.emailAddress || '';
-                landlinePhoneNumberInput.value = profileData.landlinePhoneNumber || '';
-                cellPhoneNumberInput.value = profileData.cellPhoneNumber || '';
-                canTextCellPhoneNumberCheckbox.checked = profileData.canTextCellPhoneNumber || false;
-                linkedinURLInput.value = profileData.linkedinURL || '';
-                portfolioWebsiteInput.value = profileData.portfolioWebsite || '';
-                githubURLInput.value = profileData.githubURL || '';
-
-                showMessage('User profile loaded.', 'success');
-
-            } catch (e) {
-                showMessage('Error loading user profile: ' + e.message, 'error');
-                console.error("Error loading profile: ", e);
-            } finally {
-                hideLoading();
+                await reauthenticateWithCredential(user, credential);
+                return true;
+            } catch (error) {
+                showMessage('Reauthentication failed: ' + error.message, 'error');
+                console.error("Reauthentication error:", error);
+                return false;
             }
         }
 
-        async function saveUserProfileData() {
-            if (!userId) {
-                showMessage('Please log in to save your profile.', 'info');
+        // --- Update Email ---
+        updateEmailBtn.addEventListener('click', async () => {
+            const newEmail = newEmailInput.value.trim();
+            const currentPassword = currentPasswordForEmail.value.trim();
+            const user = auth.currentUser;
+
+            if (!user) {
+                showMessage('No user logged in.', 'error');
+                return;
+            }
+            if (!newEmail || !currentPassword) {
+                showMessage('Please enter new email and current password.', 'error');
+                return;
+            }
+            if (newEmail === user.email) {
+                showMessage('New email is the same as current email.', 'info');
                 return;
             }
 
             showLoading();
             try {
-                const profileDocRef = getUserProfileDocRef();
-                if (!profileDocRef) {
-                    showMessage('Cannot save profile: Firebase not ready.', 'error');
-                    hideLoading();
-                    return;
+                const reauthenticated = await reauthenticateUser(currentPassword);
+                if (reauthenticated) {
+                    await updateEmail(user, newEmail);
+                    showMessage('Email updated successfully!', 'success');
+                    newEmailInput.value = '';
+                    currentPasswordForEmail.value = '';
                 }
-
-                // Gather data from inputs
-                const firstName = firstNameInput.value.trim();
-                const lastName = lastNameInput.value.trim();
-                const emailAddress = emailAddressInput.value.trim();
-                const landlinePhoneNumber = landlinePhoneNumberInput.value.trim();
-                const cellPhoneNumber = cellPhoneNumberInput.value.trim();
-                const canTextCellPhoneNumber = canTextCellPhoneNumberCheckbox.checked;
-                const linkedinURL = linkedinURLInput.value.trim();
-                const portfolioWebsite = portfolioWebsiteInput.value.trim();
-                const githubURL = githubURLInput.value.trim();
-
-                // Client-side Validation
-                if (!firstName || !lastName || !emailAddress) {
-                    showMessage('First Name, Last Name, and Email Address are required.', 'error');
-                    hideLoading();
-                    return;
-                }
-
-                const emailRegex = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i;
-                if (!emailRegex.test(emailAddress)) {
-                    showMessage('Please enter a valid email address format.', 'error');
-                    hideLoading();
-                    return;
-                }
-
-                const profileData = {
-                    firstName,
-                    lastName,
-                    emailAddress,
-                    landlinePhoneNumber,
-                    cellPhoneNumber,
-                    canTextCellPhoneNumber,
-                    linkedinURL,
-                    portfolioWebsite,
-                    githubURL
-                };
-
-                await setDoc(profileDocRef, profileData, { merge: true });
-                showMessage('User profile saved successfully!', 'success');
-
-            } catch (e) {
-                showMessage('Error saving user profile: ' + e.message, 'error');
-                console.error("Error saving profile: ", e);
+            } catch (error) {
+                showMessage('Failed to update email: ' + error.message, 'error');
+                console.error("Update email error:", error);
             } finally {
                 hideLoading();
             }
-        }
+        });
 
-        // Event Listeners
-        saveProfileBtnTop.addEventListener('click', saveUserProfileData);
-        saveProfileBtnBottom.addEventListener('click', saveUserProfileData);
+        // --- Update Password ---
+        updatePasswordBtn.addEventListener('click', async () => {
+            const newPassword = newPasswordInput.value.trim();
+            const currentPassword = currentPasswordForPassword.value.trim();
+            const user = auth.currentUser;
+
+            if (!user) {
+                showMessage('No user logged in.', 'error');
+                return;
+            }
+            if (!newPassword || !currentPassword) {
+                showMessage('Please enter new password and current password.', 'error');
+                return;
+            }
+            if (newPassword.length < 6) {
+                showMessage('New password must be at least 6 characters long.', 'error');
+                return;
+            }
+
+            showLoading();
+            try {
+                const reauthenticated = await reauthenticateUser(currentPassword);
+                if (reauthenticated) {
+                    await updatePassword(user, newPassword);
+                    showMessage('Password updated successfully!', 'success');
+                    newPasswordInput.value = '';
+                    currentPasswordForPassword.value = '';
+                }
+            } catch (error) {
+                showMessage('Failed to update password: ' + error.message, 'error');
+                console.error("Update password error:", error);
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // --- Delete Account ---
+        deleteAccountBtn.addEventListener('click', async () => {
+            const password = passwordForDelete.value.trim();
+            const user = auth.currentUser;
+
+            if (!user) {
+                showMessage('No user logged in.', 'error');
+                return;
+            }
+            if (!password) {
+                showMessage('Please enter your password to confirm account deletion.', 'error');
+                return;
+            }
+
+            if (!confirm('Are you absolutely sure you want to delete your account? This action is irreversible and will delete ALL your data.')) {
+                return;
+            }
+
+            showLoading();
+            try {
+                const reauthenticated = await reauthenticateUser(password);
+                if (reauthenticated) {
+                    // Delete user's Firestore data first
+                    const userCollections = ['jobExperience', 'coverLetters', 'userPrompts', 'promptEditHistory']; // Add any other user-specific collections
+                    for (const colName of userCollections) {
+                        const colRef = collection(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/${colName}`);
+                        const q = query(colRef);
+                        const snapshot = await getDocs(q);
+                        const deletePromises = [];
+                        snapshot.forEach(docSnapshot => {
+                            deletePromises.push(deleteDoc(doc(db, colRef.path, docSnapshot.id)));
+                        });
+                        await Promise.all(deletePromises);
+                        console.log(`Deleted all documents from ${colName} for user ${userId}`);
+                    }
+
+                    // Then delete the user from Authentication
+                    await deleteUser(user);
+                    showMessage('Account and all associated data deleted successfully. Redirecting to login.', 'success');
+                    passwordForDelete.value = '';
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 2000);
+                }
+            } catch (error) {
+                showMessage('Failed to delete account: ' + error.message, 'error');
+                console.error("Delete account error:", error);
+            } finally {
+                hideLoading();
+            }
+        });
 
         window.onload = initializeFirebase;
     </script>

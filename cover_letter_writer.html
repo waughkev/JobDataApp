@@ -216,6 +216,7 @@
                 <a href="tailor.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Resume Tailor</a>
                 <a href="coverletter.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Cover Letters</a>
                 <a href="cover_letter_writer.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">AI Cover Letter</a>
+                <a href="AI_Job_Tailor.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">AI Agent Network</a>
             </div>
             <div class="flex items-center space-x-4">
                 <button id="authButton" class="btn bg-gray-600 text-white hover:bg-gray-500">Loading...</button>
@@ -286,7 +287,7 @@
 
         // Your web app's Firebase configuration - MUST BE THE SAME AS YOUR OTHER PAGES
         const firebaseConfig = {
-            apiKey: window.FIREBASE_API_KEY,
+            apiKey: window.FIREBASE_API_KEY, // Injected by server.js
             authDomain: "jobdata-c7f32.firebaseapp.com",
             projectId: "jobdata-c7f32",
             storageBucket: "jobdata-c7f32.firebasestorage.app",
@@ -565,7 +566,6 @@
 
                 // Prompt Text
                 const promptTextSpan = document.createElement('span');
-                // FIX: Use prompt.promptText instead of prompt.text
                 promptTextSpan.className = `prompt-text ${isEnabled ? '' : 'disabled'}`;
                 promptTextSpan.textContent = prompt.promptText; 
                 promptTextSpan.dataset.promptId = prompt.id;
@@ -729,7 +729,6 @@
                 if (colRef) {
                     await addDoc(colRef, {
                         promptText: promptText,
-                        // Removed originPage: 'Cover Letter Writer' to make prompts universal
                         createdAt: serverTimestamp(),
                         updatedAt: serverTimestamp()
                     });
@@ -769,8 +768,8 @@
                 if (editHistoryColRef) {
                     await addDoc(editHistoryColRef, {
                         promptId: promptId,
-                        priorPromptText: oldPromptText,
-                        updatedPromptText: newPromptText,
+                        priorPromptText: oldText,
+                        updatedPromptText: newText,
                         editedAt: serverTimestamp()
                     });
                 }
@@ -952,7 +951,6 @@
             if (enabledPrompts.length > 0) {
                 prompt += `\n\n**Additional AI Directives (from enabled prompts):**\n`;
                 enabledPrompts.forEach((p, index) => {
-                    // FIX: Use p.promptText instead of p.text
                     prompt += `- ${p.promptText}\n`;
                 });
             }
@@ -962,7 +960,7 @@
                 let chatHistory = [];
                 chatHistory.push({ role: "user", parts: [{ text: prompt }] });
                 const payload = { contents: chatHistory };
-                const apiKey = window.FIREBASE_API_KEY; // Keep your actual key here.
+                const apiKey = window.FIREBASE_API_KEY; 
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                 const response = await fetch(apiUrl, {
