@@ -25,7 +25,7 @@ app.get('/:filename', (req, res, next) => {
         'coverletter.html', 
         'user_settings.html', 
         'login.html',
-		'AI_job_tailor.html'
+		'AI_job_tailor.html',
         'shared_coverletter.html' // If you ever implement this page, it would also be in root
     ]; 
 
