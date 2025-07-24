@@ -133,6 +133,9 @@
         <h2 class="text-xl font-semibold text-gray-700 mb-3">Tailored Resume Suggestions:</h2>
         <textarea id="tailoredResumeOutput" class="output-textarea" readonly placeholder="AI-tailored resume suggestions will appear here."></textarea>
 
+        <h2 class="text-xl font-semibold text-gray-700 mb-3">Formatted Resume Draft:</h2>
+        <textarea id="formattedResumeOutput" class="output-textarea" readonly placeholder="Your complete, formatted resume draft will appear here."></textarea>
+
         <h2 class="text-xl font-semibold text-gray-700 mb-3">Generated Cover Letter Draft:</h2>
         <textarea id="generatedCoverLetterOutput" class="output-textarea" readonly placeholder="AI-generated cover letter draft will appear here."></textarea>
     </div>
@@ -177,8 +180,9 @@
         const jobUrlInput = document.getElementById('jobUrlInput');
         const runAgentNetworkBtn = document.getElementById('runAgentNetworkBtn');
         const extractedJobDescriptionOutput = document.getElementById('extractedJobDescriptionOutput');
-        const companyContextOutput = document.getElementById('companyContextOutput'); // New element
+        const companyContextOutput = document.getElementById('companyContextOutput'); 
         const tailoredResumeOutput = document.getElementById('tailoredResumeOutput');
+        const formattedResumeOutput = document.getElementById('formattedResumeOutput'); // New element
         const generatedCoverLetterOutput = document.getElementById('generatedCoverLetterOutput');
         const authButton = document.getElementById('authButton'); 
 
@@ -189,11 +193,12 @@
         // --- Utility Functions ---
         function showLoading(message = "Processing with AI agents...") {
             extractedJobDescriptionOutput.value = "";
-            companyContextOutput.value = ""; // Clear new output
+            companyContextOutput.value = ""; 
             tailoredResumeOutput.value = "";
+            formattedResumeOutput.value = ""; // Clear new output
             generatedCoverLetterOutput.value = "";
-            remoteStatusDisplay.textContent = "N/A"; // Clear new display
-            locationDisplay.textContent = "N/A"; // Clear new display
+            remoteStatusDisplay.textContent = "N/A"; 
+            locationDisplay.textContent = "N/A"; 
             showMessage(message, 'info');
             loadingOverlay.classList.remove('hidden');
         }
@@ -474,7 +479,7 @@
                 return "No company name provided for research.";
             }
 
-            const searchPrompt = `Perform a concise web search for "${companyName} company overview" and "${companyName} mission". Summarize the key information about the company, including its industry, mission, values, and any recent notable achievements or news. Keep the summary to 3-5 sentences. Use the URL provided to determine the main company web site to return.`;
+            const searchPrompt = `Perform a concise web search for "${companyName} company overview" and "${companyName} mission". Summarize the key information about the company, including its industry, mission, values, and any recent notable achievements or news. Keep the summary to 3-5 sentences.`;
 
             const payload = {
                 contents: [{ role: "user", parts: [{ text: searchPrompt }] }],
@@ -664,13 +669,115 @@
         }
 
         /**
-         * Agent 5: Generates a cover letter draft (reusing logic from cover_letter_writer.html).
+         * Agent 5: Generates a complete, formatted resume in plain text.
+         * @param {Array<Object>} allJobExperiences The user's full job experience data.
+         * @param {string} tailoredSuggestions The AI-generated tailored resume suggestions.
+         * @param {string} jobDescription The original job description.
+         * @param {string} companyContext Optional company context.
+         * @returns {Promise<string>} The formatted resume in plain text.
+         */
+        async function generateFormattedResume(allJobExperiences, tailoredSuggestions, jobDescription, companyContext = "") {
+            showMessage("Agent 5: Generating formatted resume draft...", 'info');
+
+            if (allJobExperiences.length === 0) {
+                return "Cannot generate a formatted resume: No job experience data available.";
+            }
+
+            // Construct a detailed string of all job experiences for the AI
+            let allExperienceDetails = "\n\n**My Complete Job Experiences (for factual details):**\n";
+            allJobExperiences.forEach(job => {
+                allExperienceDetails += `--- Job: ${job["Job Name"]} at ${job["Job Company"]} (${job["Job Date Start"]} - ${job["Job Date End"] || 'Current'}) ---\n`;
+                if (job["Job Description"]) {
+                    allExperienceDetails += `  Description: ${job["Job Description"]}\n`;
+                }
+                if (job["Job Skills"]) {
+                    allExperienceDetails += `  Skills: ${job["Job Skills"]}\n`;
+                }
+                (job.projects || []).forEach(subproject => {
+                    allExperienceDetails += `  - Project: "${subproject.subprojectName || 'N/A'}", Role: "${subproject.subprojectRole || 'N/A'}" (${subproject.subprojectDateStart || ''} - ${subproject.subprojectDateEnd || ''})\n`;
+                    if (subproject.subprojectDescription) {
+                        allExperienceDetails += `    Project Description: ${subproject.subprojectDescription}\n`;
+                    }
+                    if (subproject.subprojectSkills) {
+                        allExperienceDetails += `    Project Skills: ${subproject.subprojectSkills}\n`;
+                    }
+                });
+                allExperienceDetails += '\n'; 
+            });
+
+            let prompt = `You are an expert resume writer. Your task is to create a complete, plain text resume for a job application.
+            
+            **Job Description:**
+            ${jobDescription}
+
+            **My Tailored Resume Suggestions (from a previous AI pass):**
+            ${tailoredSuggestions}
+
+            **My Complete Job Experiences (for factual details and full context):**
+            ${allExperienceDetails}
+
+            **Instructions for Resume Generation:**
+            - Create a full resume in plain text format.
+            - Include the following sections, in this order:
+                1.  **Contact Information:** (Placeholder, as real contact info isn't provided here, suggest "Your Name, Phone, Email, LinkedIn Profile")
+                2.  **Summary/Objective:** Create a concise summary tailored to the job description, integrating suggestions if provided.
+                3.  **Work Experience:**
+                    - For each relevant job from "My Complete Job Experiences", include Job Title, Company, Location (if known from JD or inferred), and Dates.
+                    - Under each job, create 3-5 strong bullet points. These bullet points MUST incorporate the "My Tailored Resume Suggestions" as primary guidance, but also draw from "My Complete Job Experiences" for factual accuracy and additional detail.
+                    - Focus on achievements and quantifiable results.
+                4.  **Skills:** Create a comprehensive list of relevant skills, drawing from both your job experiences and the job description. Categorize them if appropriate (e.g., Technical Skills, Soft Skills).
+                5.  **Education:** (Placeholder if not explicitly provided, suggest "Degree, Major, University, Graduation Year")
+            - **Formatting:** Use clear headings, bullet points (hyphens or asterisks are fine), and consistent spacing. The output should be ready to be copied into a plain text editor or an ATS-friendly resume builder.
+            - **Do NOT include any introductory or concluding conversational text.** Just the resume content.
+            - **Ensure the resume is concise but comprehensive, typically 1-2 pages.**
+            `;
+
+            const enabledPrompts = [...defaultPrompts, ...userPrompts].filter(p => promptStates[p.id]);
+            if (enabledPrompts.length > 0) {
+                prompt += `\n\n**Additional AI Directives (from enabled prompts):**\n`;
+                enabledPrompts.forEach((p, index) => {
+                    prompt += `- ${p.promptText}\n`;
+                });
+            }
+
+            try {
+                const chatHistoryFormattedResume = [];
+                chatHistoryFormattedResume.push({ role: "user", parts: [{ text: prompt }] });
+                const payloadFormattedResume = { contents: chatHistoryFormattedResume };
+                const apiKey = window.FIREBASE_API_KEY; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const responseFormattedResume = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payloadFormattedResume)
+                });
+
+                const resultFormattedResume = await responseFormattedResume.json();
+
+                if (resultFormattedResume.candidates && resultFormattedResume.candidates.length > 0 &&
+                    resultFormattedResume[0].content && resultFormattedResume[0].content.parts &&
+                    resultFormattedResume[0].content.parts.length > 0) {
+                    return resultFormattedResume.candidates[0].content.parts[0].text;
+                } else {
+                    console.error("Formatted resume AI response malformed:", resultFormattedResume);
+                    throw new Error("Failed to generate formatted resume.");
+                }
+            } catch (error) {
+                console.error("Error generating formatted resume:", error);
+                throw new Error("Could not generate formatted resume draft.");
+            }
+        }
+
+
+        /**
+         * Agent 6: Generates a cover letter draft (reusing logic from cover_letter_writer.html).
          * @param {string} jobDescription The extracted job description.
          * @param {string} companyContext Optional company context.
          * @returns {Promise<string>} Cover letter draft.
          */
         async function generateCoverLetter(jobDescription, companyContext = "") {
-            showMessage("Agent 5: Generating cover letter draft...", 'info');
+            showMessage("Agent 6: Generating cover letter draft...", 'info');
             if (jobData.length === 0 && coverLettersData.length === 0) {
                 showMessage("No job experiences or past cover letters loaded. Cannot generate cover letter.", "error");
                 throw new Error("Missing job experience or cover letter data.");
@@ -908,7 +1015,12 @@
                 tailoredResumeOutput.value = tailoredResume;
                 showMessage("Tailored resume suggestions generated!", "success");
 
-                // Agent 5: Generate Cover Letter
+                // Agent 5: Generate Formatted Resume
+                const formattedResume = await generateFormattedResume(jobData, tailoredResume, jobDescription, companyContext);
+                formattedResumeOutput.value = formattedResume;
+                showMessage("Formatted resume draft generated!", "success");
+
+                // Agent 6: Generate Cover Letter
                 const coverLetter = await generateCoverLetter(jobDescription, companyContext);
                 generatedCoverLetterOutput.value = coverLetter;
                 showMessage("Cover letter draft generated!", "success");
