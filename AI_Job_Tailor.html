@@ -474,7 +474,7 @@
                 return "No company name provided for research.";
             }
 
-            const searchPrompt = `Perform a concise web search for "${companyName} company overview" and "${companyName} mission". Summarize the key information about the company, including its industry, mission, values, and any recent notable achievements or news. Keep the summary to 3-5 sentences.`;
+            const searchPrompt = `Perform a concise web search for "${companyName} company overview" and "${companyName} mission". Summarize the key information about the company, including its industry, mission, values, and any recent notable achievements or news. Keep the summary to 3-5 sentences. Use the URL provided to determine the main company web site to return.`;
 
             const payload = {
                 contents: [{ role: "user", parts: [{ text: searchPrompt }] }],
