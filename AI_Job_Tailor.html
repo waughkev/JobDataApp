@@ -755,9 +755,10 @@
 
                 const resultFormattedResume = await responseFormattedResume.json();
 
+                // Corrected access: resultFormattedResume.candidates[0].content.parts[0].text
                 if (resultFormattedResume.candidates && resultFormattedResume.candidates.length > 0 &&
-                    resultFormattedResume[0].content && resultFormattedResume[0].content.parts &&
-                    resultFormattedResume[0].content.parts.length > 0) {
+                    resultFormattedResume.candidates[0].content && resultFormattedResume.candidates[0].content.parts &&
+                    resultFormattedResume.candidates[0].content.parts.length > 0) {
                     return resultFormattedResume.candidates[0].content.parts[0].text;
                 } else {
                     console.error("Formatted resume AI response malformed:", resultFormattedResume);
