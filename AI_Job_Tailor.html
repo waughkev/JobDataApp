@@ -93,7 +93,7 @@
                 <a href="tailor.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Resume Tailor</a>
                 <a href="coverletter.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Cover Letters</a>
                 <a href="cover_letter_writer.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">AI Cover Letter</a>
-                <a href="AI_Job_Tailor.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">AI Agent Network</a>
+                <a href="agent_network.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">AI Agent Network</a>
             </div>
             <div class="flex items-center space-x-4">
                 <button id="authButton" class="btn bg-gray-600 text-white hover:bg-gray-500">Loading...</button>
@@ -115,15 +115,34 @@
             <span id="message-content"></span>
         </div>
 
-        <h2 class="text-xl font-semibold text-gray-700 mb-3">Job Posting URL:</h2>
-        <input type="url" id="jobUrlInput" placeholder="e.g., https://www.linkedin.com/jobs/view/..." class="w-full p-3 border rounded-md shadow-sm mb-4">
+        <div class="mb-4">
+            <label class="inline-flex items-center mr-6">
+                <input type="radio" class="form-radio text-indigo-600" name="jobInputMethod" value="url" checked>
+                <span class="ml-2 text-gray-700">Job Posting URL</span>
+            </label>
+            <label class="inline-flex items-center">
+                <input type="radio" class="form-radio text-indigo-600" name="jobInputMethod" value="text">
+                <span class="ml-2 text-gray-700">Paste Job Description</span>
+            </label>
+        </div>
+
+        <div id="urlInputSection">
+            <h2 class="text-xl font-semibold text-gray-700 mb-3">Job Posting URL:</h2>
+            <input type="url" id="jobUrlInput" placeholder="e.g., https://www.linkedin.com/jobs/view/..." class="w-full p-3 border rounded-md shadow-sm mb-4">
+        </div>
+
+        <div id="textInputSection" class="hidden">
+            <h2 class="text-xl font-semibold text-gray-700 mb-3">Paste Job Description:</h2>
+            <textarea id="jobDescriptionTextInput" placeholder="Paste the full job description content here." class="output-textarea mb-4"></textarea>
+        </div>
 
         <button id="runAgentNetworkBtn" class="btn btn-primary mb-6">Run AI Agent Network</button>
 
-        <h2 class="text-xl font-semibold text-gray-700 mb-3">Extracted Job Description:</h2>
+        <h2 class="text-xl font-semibold text-gray-700 mb-3">Extracted Job Details:</h2>
         <p class="text-sm text-gray-600 mb-2">
             Remote Status: <span id="remoteStatusDisplay" class="font-semibold text-gray-800">N/A</span> | 
-            Location: <span id="locationDisplay" class="font-semibold text-gray-800">N/A</span>
+            Location: <span id="locationDisplay" class="font-semibold text-gray-800">N/A</span> |
+            Salary: <span id="salaryDisplay" class="font-semibold text-gray-800">N/A</span>
         </p>
         <textarea id="extractedJobDescriptionOutput" class="output-textarea" readonly placeholder="The AI will extract the job description from the URL here."></textarea>
 
@@ -133,9 +152,6 @@
         <h2 class="text-xl font-semibold text-gray-700 mb-3">Tailored Resume Suggestions:</h2>
         <textarea id="tailoredResumeOutput" class="output-textarea" readonly placeholder="AI-tailored resume suggestions will appear here."></textarea>
 
-        <h2 class="text-xl font-semibold text-gray-700 mb-3">Formatted Resume Draft:</h2>
-        <textarea id="formattedResumeOutput" class="output-textarea" readonly placeholder="Your complete, formatted resume draft will appear here."></textarea>
-
         <h2 class="text-xl font-semibold text-gray-700 mb-3">Generated Cover Letter Draft:</h2>
         <textarea id="generatedCoverLetterOutput" class="output-textarea" readonly placeholder="AI-generated cover letter draft will appear here."></textarea>
     </div>
@@ -144,7 +160,7 @@
         // Firebase imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
         import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, query, addDoc, doc, getDoc, setDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, query, addDoc, doc, setDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
         // Your web app's Firebase configuration - MUST BE THE SAME AS YOUR OTHER PAGES
         const firebaseConfig = {
@@ -167,7 +183,6 @@
         let jobData = []; // User's job experiences from Firestore
         let coverLettersData = []; // User's cover letters from Firestore
         let userPrompts = []; // Universal user prompts from Firestore
-        let userInfo = {}; // User's personal information from Firestore
         let promptStates = {}; // Client-side state for enabled/disabled prompts { promptId: boolean }
 
         // Hardcoded default prompts (can be reused or specific to this page if needed)
@@ -183,23 +198,30 @@
         const extractedJobDescriptionOutput = document.getElementById('extractedJobDescriptionOutput');
         const companyContextOutput = document.getElementById('companyContextOutput'); 
         const tailoredResumeOutput = document.getElementById('tailoredResumeOutput');
-        const formattedResumeOutput = document.getElementById('formattedResumeOutput'); // New element
         const generatedCoverLetterOutput = document.getElementById('generatedCoverLetterOutput');
         const authButton = document.getElementById('authButton'); 
 
-        // New elements for location/remote status
+        // New elements for location/remote status/salary
         const remoteStatusDisplay = document.getElementById('remoteStatusDisplay');
         const locationDisplay = document.getElementById('locationDisplay');
+        const salaryDisplay = document.getElementById('salaryDisplay'); 
+
+        // New elements for input method toggle
+        const urlInputSection = document.getElementById('urlInputSection');
+        const textInputSection = document.getElementById('textInputSection');
+        const jobDescriptionTextInput = document.getElementById('jobDescriptionTextInput');
+        const jobInputMethodRadios = document.querySelectorAll('input[name="jobInputMethod"]');
+
 
         // --- Utility Functions ---
         function showLoading(message = "Processing with AI agents...") {
             extractedJobDescriptionOutput.value = "";
             companyContextOutput.value = ""; 
             tailoredResumeOutput.value = "";
-            formattedResumeOutput.value = ""; // Clear new output
             generatedCoverLetterOutput.value = "";
             remoteStatusDisplay.textContent = "N/A"; 
             locationDisplay.textContent = "N/A"; 
+            salaryDisplay.textContent = "N/A"; 
             showMessage(message, 'info');
             loadingOverlay.classList.remove('hidden');
         }
@@ -272,7 +294,6 @@
                 setupJobDataListener();
                 setupCoverLettersListener();
                 setupUserPromptsListener();
-                loadUserInfoFromFirestore(); // Load user info
             } else {
                 userId = null;
                 userIdDisplay.textContent = 'Not Logged In';
@@ -309,14 +330,6 @@
                 return null;
             }
             return collection(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/userPrompts`);
-        }
-
-        function getUserInfoDocRef() {
-            if (!db || !userId) {
-                console.error("Firestore DB or User ID not initialized.");
-                return null;
-            }
-            return doc(db, `artifacts/${APP_ID_FOR_HEROKU}/users/${userId}/userInfo`, 'profile');
         }
 
         function setupJobDataListener() {
@@ -369,20 +382,6 @@
             }
         }
 
-        async function loadUserInfoFromFirestore() {
-            const docRef = getUserInfoDocRef();
-            if (docRef) {
-                const docSnapshot = await getDoc(docRef);
-                if (docSnapshot.exists()) {
-                    userInfo = docSnapshot.data();
-                    console.log("Loaded user info:", userInfo);
-                } else {
-                    userInfo = {}; // Reset if no info found
-                    console.log("No user info found in Firestore.");
-                }
-            }
-        }
-
         async function initializeFirebaseAndLoadData() {
             showLoading("Initializing Firebase and loading user data..."); 
             try {
@@ -422,9 +421,9 @@
         }
 
         /**
-         * Agent 2: Classifies if content is a job posting, extracts JD, remote status, and location.
-         * @param {string} content The raw text content of a webpage.
-         * @returns {Promise<{isJobPosting: boolean, jobDescription: string, isRemote: boolean, location: string}>}
+         * Agent 2: Classifies if content is a job posting, extracts JD, remote status, location, and salary.
+         * @param {string} content The raw text content of a webpage or pasted JD.
+         * @returns {Promise<{isJobPosting: boolean, jobDescription: string, isRemote: boolean, location: string, salary: string}>}
          */
         async function classifyJobPosting(content) {
             showMessage("Agent 2: Classifying job posting and extracting details...", 'info');
@@ -433,17 +432,19 @@
             1. Extract the full, clean job description.
             2. Determine if the role is explicitly "remote" or "work from home".
             3. If it is NOT remote, extract the specific location (city, state, country, or specific office address if present).
+            4. **Extract the salary or salary range if explicitly mentioned.** If not found, note "N/A".
 
             If it is NOT a job posting:
             1. Set 'isJobPosting' to false.
             2. Explain briefly why it's not a job posting in the 'jobDescription' field.
-            3. Set 'isRemote' to false and 'location' to 'N/A'.
+            3. Set 'isRemote' to false, 'location' to 'N/A', and 'salary' to 'N/A'.
 
             Provide your response in JSON format with the following fields:
             'isJobPosting' (boolean)
             'jobDescription' (string, contains the full JD or reason if not a job posting)
             'isRemote' (boolean)
             'location' (string, e.g., "New York, NY", "London, UK", "N/A" if remote or not found)
+            'salary' (string, e.g., "$80,000 - $100,000 per year", "Competitive", "N/A" if not found)
 
             Text Content:
             ${content.substring(0, 15000)} // Limit content to avoid exceeding token limits
@@ -459,9 +460,10 @@
                             isJobPosting: { type: "BOOLEAN" },
                             jobDescription: { type: "STRING" },
                             isRemote: { type: "BOOLEAN" },
-                            location: { type: "STRING" }
+                            location: { type: "STRING" },
+                            salary: { type: "STRING" } 
                         },
-                        required: ["isJobPosting", "jobDescription", "isRemote", "location"]
+                        required: ["isJobPosting", "jobDescription", "isRemote", "location", "salary"] 
                     }
                 }
             };
@@ -540,14 +542,6 @@
                     result.candidates[0].content && result.candidates[0].content.parts &&
                     result.candidates[0].content.parts.length > 0) {
                     
-                    // The model might return a function call to google_search.
-                    // In a real interactive agent, you'd execute the tool and send the result back.
-                    // For this direct client-side example, we'll assume the model directly
-                    // provides the summary based on its internal knowledge or a simulated search.
-                    // If the model *does* return a tool call, this simple fetch won't execute it.
-                    // For robust tool use, a server-side component to handle tool execution is ideal.
-                    
-                    // For now, let's assume the model generates the summary directly.
                     return result.candidates[0].content.parts[0].text;
 
                 } else {
@@ -693,137 +687,13 @@
         }
 
         /**
-         * Agent 5: Generates a complete, formatted resume in plain text.
-         * @param {Object} userInfo The user's personal information.
-         * @param {Array<Object>} allJobExperiences The user's full job experience data.
-         * @param {string} tailoredSuggestions The AI-generated tailored resume suggestions.
-         * @param {string} jobDescription The original job description.
-         * @param {string} companyContext Optional company context.
-         * @returns {Promise<string>} The formatted resume in plain text.
-         */
-        async function generateFormattedResume(userInfo, allJobExperiences, tailoredSuggestions, jobDescription, companyContext = "") {
-            showMessage("Agent 5: Generating formatted resume draft...", 'info');
-
-            if (allJobExperiences.length === 0) {
-                return "Cannot generate a formatted resume: No job experience data available.";
-            }
-
-            // Construct contact info string
-            const userFirstName = userInfo.firstName || "Your First Name";
-            const userLastName = userInfo.lastName || "Your Last Name";
-            const userEmail = userInfo.email || "your.email@example.com";
-            const userLinkedIn = userInfo.linkedinUrl || "https://linkedin.com/in/yourprofile";
-            const userPhone = userInfo.cellPhone || userInfo.landlinePhone || "Your Phone Number";
-            const userPortfolio = userInfo.portfolioWebsite || "";
-            const userGithub = userInfo.github || "";
-
-            let contactInfoString = `${userFirstName} ${userLastName}\n`;
-            contactInfoString += `Title (Craft a title showcasing relevance to the job posting)\n`; // AI will fill this
-            contactInfoString += `Email: ${userEmail}\n`;
-            if (userPhone) contactInfoString += `Phone: ${userPhone}\n`;
-            contactInfoString += `LinkedIn: ${userLinkedIn}\n`;
-            if (userPortfolio) contactInfoString += `Portfolio: ${userPortfolio}\n`;
-            if (userGithub) contactInfoString += `Github: ${userGithub}\n`;
-
-
-            // Construct a detailed string of all job experiences for the AI
-            let allExperienceDetails = "\n\n**My Complete Job Experiences (for factual details):**\n";
-            allJobExperiences.forEach(job => {
-                allExperienceDetails += `--- Job: ${job["Job Name"]} at ${job["Job Company"]} (${job["Job Date Start"]} - ${job["Job Date End"] || 'Current'}) ---\n`;
-                if (job["Job Description"]) {
-                    allExperienceDetails += `  Description: ${job["Job Description"]}\n`;
-                }
-                if (job["Job Skills"]) {
-                    allExperienceDetails += `  Skills: ${job["Job Skills"]}\n`;
-                }
-                (job.projects || []).forEach(subproject => {
-                    allExperienceDetails += `  - Project: "${subproject.subprojectName || 'N/A'}", Role: "${subproject.subprojectRole || 'N/A'}" (${subproject.subprojectDateStart || ''} - ${subproject.subprojectDateEnd || ''})\n`;
-                    if (subproject.subprojectDescription) {
-                        allExperienceDetails += `    Project Description: ${subproject.subprojectDescription}\n`;
-                    }
-                    if (subproject.subprojectSkills) {
-                        allExperienceDetails += `    Project Skills: ${subproject.subprojectSkills}\n`;
-                    }
-                });
-                allExperienceDetails += '\n'; 
-            });
-
-            let prompt = `You are an expert resume writer. Your task is to create a complete, plain text resume for a job application.
-            
-            **Job Description:**
-            ${jobDescription}
-
-            **My Tailored Resume Suggestions (from a previous AI pass):**
-            ${tailoredSuggestions}
-
-            **My Complete Job Experiences (for factual details and full context):**
-            ${allExperienceDetails}
-
-            **My Personal Information (for Contact Section):**
-            ${contactInfoString}
-
-            **Instructions for Resume Generation:**
-            - Create a full resume in plain text format.
-            - Include the following sections, in this order:
-                1.  **Contact Information:** Use the provided "My Personal Information". For the 'Title', craft a title that showcases my relevance to the job posting. Each comma in the provided format should represent a new line.
-                2.  **Summary/Objective:** Create a concise summary tailored to the job description, integrating suggestions if provided.
-                3.  **Work Experience:**
-                    - For each relevant job from "My Complete Job Experiences", include Job Title, Company, Location (if known from JD or inferred), and Dates.
-                    - Under each job, create 3-5 strong bullet points. These bullet points MUST incorporate the "My Tailored Resume Suggestions" as primary guidance, but also draw from "My Complete Job Experiences" for factual accuracy and additional detail.
-                    - Focus on achievements and quantifiable results.
-                4.  **Skills:** Create a comprehensive list of relevant skills, drawing from both my job experiences and the job description. Categorize them if appropriate (e.g., Technical Skills, Soft Skills).
-                5.  **Education:** (Placeholder if not explicitly provided, suggest "Degree, Major, University, Graduation Year")
-            - **Formatting:** Use clear headings, bullet points (hyphens or asterisks are fine), and consistent spacing. The output should be ready to be copied into a plain text editor or an ATS-friendly resume builder.
-            - **Do NOT include any introductory or concluding conversational text.** Just the resume content.
-            - **Ensure the resume is concise but comprehensive, typically 1-2 pages.**
-            `;
-
-            const enabledPrompts = [...defaultPrompts, ...userPrompts].filter(p => promptStates[p.id]);
-            if (enabledPrompts.length > 0) {
-                prompt += `\n\n**Additional AI Directives (from enabled prompts):**\n`;
-                enabledPrompts.forEach((p, index) => {
-                    prompt += `- ${p.promptText}\n`;
-                });
-            }
-
-            try {
-                const chatHistoryFormattedResume = [];
-                chatHistoryFormattedResume.push({ role: "user", parts: [{ text: prompt }] });
-                const payloadFormattedResume = { contents: chatHistoryFormattedResume };
-                const apiKey = window.FIREBASE_API_KEY; 
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-                const responseFormattedResume = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payloadFormattedResume)
-                });
-
-                const resultFormattedResume = await responseFormattedResume.json();
-
-                if (resultFormattedResume.candidates && resultFormattedResume.candidates.length > 0 &&
-                    resultFormattedResume.candidates[0].content && resultFormattedResume.candidates[0].content.parts &&
-                    resultFormattedResume.candidates[0].content.parts.length > 0) {
-                    return resultFormattedResume.candidates[0].content.parts[0].text;
-                } else {
-                    console.error("Formatted resume AI response malformed:", resultFormattedResume);
-                    throw new Error("Failed to generate formatted resume.");
-                }
-            } catch (error) {
-                console.error("Error generating formatted resume:", error);
-                throw new Error("Could not generate formatted resume draft.");
-            }
-        }
-
-
-        /**
-         * Agent 6: Generates a cover letter draft (reusing logic from cover_letter_writer.html).
+         * Agent 5: Generates a cover letter draft (reusing logic from cover_letter_writer.html).
          * @param {string} jobDescription The extracted job description.
          * @param {string} companyContext Optional company context.
          * @returns {Promise<string>} Cover letter draft.
          */
         async function generateCoverLetter(jobDescription, companyContext = "") {
-            showMessage("Agent 6: Generating cover letter draft...", 'info');
+            showMessage("Agent 5: Generating cover letter draft...", 'info');
             if (jobData.length === 0 && coverLettersData.length === 0) {
                 showMessage("No job experiences or past cover letters loaded. Cannot generate cover letter.", "error");
                 throw new Error("Missing job experience or cover letter data.");
@@ -992,26 +862,41 @@
          */
         async function runAgentNetwork() {
             showLoading();
-            const jobUrl = jobUrlInput.value.trim();
+            let jobDescriptionRaw = "";
+            let urlProvided = false;
 
-            if (!jobUrl) {
-                showMessage("Please enter a URL to begin the AI Agent Network process.", "info");
-                hideLoading();
-                return;
+            const selectedInputMethod = document.querySelector('input[name="jobInputMethod"]:checked').value;
+
+            if (selectedInputMethod === 'url') {
+                const jobUrl = jobUrlInput.value.trim();
+                if (!jobUrl) {
+                    showMessage("Please enter a URL or select 'Paste Job Description'.", "info");
+                    hideLoading();
+                    return;
+                }
+                urlProvided = true;
+                // Agent 1: Fetch URL Content
+                jobDescriptionRaw = await fetchUrlContent(jobUrl);
+            } else { // selectedInputMethod === 'text'
+                jobDescriptionRaw = jobDescriptionTextInput.value.trim();
+                if (!jobDescriptionRaw) {
+                    showMessage("Please paste the job description content or select 'Job Posting URL'.", "info");
+                    hideLoading();
+                    return;
+                }
             }
 
             try {
-                // Agent 1: Fetch URL Content
-                const urlContent = await fetchUrlContent(jobUrl);
-                
                 // Agent 2: Classify Job Posting (Enhanced)
-                const classificationResult = await classifyJobPosting(urlContent);
+                // This agent now handles both URL content and direct text input
+                const classificationResult = await classifyJobPosting(jobDescriptionRaw);
 
                 if (!classificationResult.isJobPosting) {
-                    extractedJobDescriptionOutput.value = `Content from URL is NOT a job posting. Reason: ${classificationResult.jobDescription || 'N/A'}`;
+                    extractedJobDescriptionOutput.value = `Content is NOT a job posting. Reason: ${classificationResult.jobDescription || 'N/A'}`;
                     remoteStatusDisplay.textContent = "N/A";
                     locationDisplay.textContent = "N/A";
-                    showMessage("The provided URL does not appear to be a job posting.", "error");
+                    salaryDisplay.textContent = "N/A"; 
+                    showMessage("The provided content does not appear to be a job posting.", "error");
                     hideLoading();
                     return;
                 }
@@ -1019,35 +904,39 @@
                 const jobDescription = classificationResult.jobDescription;
                 const isRemote = classificationResult.isRemote;
                 const location = classificationResult.location;
+                const salary = classificationResult.salary; 
 
                 extractedJobDescriptionOutput.value = jobDescription;
                 remoteStatusDisplay.textContent = isRemote ? "Yes" : "No";
                 locationDisplay.textContent = location;
+                salaryDisplay.textContent = salary; 
                 showMessage("Job description and details extracted successfully!", "success");
 
                 // Attempt to extract company name for research
-                const companyMatch = jobDescription.match(/at\s+([A-Z][a-zA-Z\s,\-]+?)\s*(?:inc\.|llc|ltd|corp|corporation|group|solutions|technologies|company|co\.)?/i);
-                let companyName = companyMatch && companyMatch[1] ? companyMatch[1].trim() : '';
-
-                // If company name is still not found, try to extract from URL or prompt AI
-                if (!companyName) {
+                let companyName = "";
+                // If URL was provided, try to extract company from URL first
+                if (urlProvided) {
                     try {
-                        const urlObj = new URL(jobUrl);
+                        const urlObj = new URL(jobUrlInput.value.trim());
                         const hostnameParts = urlObj.hostname.split('.');
-                        // Try to get a reasonable company name from hostname (e.g., "google" from "careers.google.com")
                         if (hostnameParts.length >= 2) {
                             companyName = hostnameParts[hostnameParts.length - 2];
-                            // Basic cleanup for common domain suffixes if they are part of the name
                             if (companyName.toLowerCase() === 'co' && hostnameParts.length >=3) {
                                 companyName = hostnameParts[hostnameParts.length - 3];
                             }
-                            companyName = companyName.charAt(0).toUpperCase() + companyName.slice(1); // Capitalize
+                            companyName = companyName.charAt(0).toUpperCase() + companyName.slice(1); 
                         }
                     } catch (e) {
                         console.warn("Could not parse company name from URL:", e);
                     }
                 }
                 
+                // If company name still not found, try from job description
+                if (!companyName) {
+                    const companyMatch = jobDescription.match(/at\s+([A-Z][a-zA-Z\s,\-]+?)\s*(?:inc\.|llc|ltd|corp|corporation|group|solutions|technologies|company|co\.)?/i);
+                    companyName = companyMatch && companyMatch[1] ? companyMatch[1].trim() : '';
+                }
+
                 // Agent 3: Research Company (only if a company name is found)
                 let companyContext = "No company context generated.";
                 if (companyName) {
@@ -1061,13 +950,7 @@
                 tailoredResumeOutput.value = tailoredResume;
                 showMessage("Tailored resume suggestions generated!", "success");
 
-                // Agent 5: Generate Formatted Resume
-                // Pass userInfo to the function
-                const formattedResume = await generateFormattedResume(userInfo, jobData, tailoredResume, jobDescription, companyContext);
-                formattedResumeOutput.value = formattedResume;
-                showMessage("Formatted resume draft generated!", "success");
-
-                // Agent 6: Generate Cover Letter
+                // Agent 5: Generate Cover Letter
                 const coverLetter = await generateCoverLetter(jobDescription, companyContext);
                 generatedCoverLetterOutput.value = coverLetter;
                 showMessage("Cover letter draft generated!", "success");
@@ -1082,6 +965,20 @@
 
         // --- Event Listeners ---
         runAgentNetworkBtn.addEventListener('click', runAgentNetwork);
+
+        // Event listeners for input method radio buttons
+        jobInputMethodRadios.forEach(radio => {
+            radio.addEventListener('change', (event) => {
+                if (event.target.value === 'url') {
+                    urlInputSection.classList.remove('hidden');
+                    textInputSection.classList.add('hidden');
+                } else {
+                    urlInputSection.classList.add('hidden');
+                    textInputSection.classList.remove('hidden');
+                }
+            });
+        });
+
 
         window.onload = initializeFirebaseAndLoadData;
     </script>
