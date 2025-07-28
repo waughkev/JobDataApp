@@ -142,7 +142,7 @@
                 <a href="tailor.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Resume Tailor</a>
                 <a href="coverletter.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Cover Letters</a>
                 <a href="cover_letter_writer.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">AI Cover Letter</a>
-                <a href="agent_network.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">AI Agent Network</a>
+                <a href="AI_Job_Tailor.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">AI Agent Network</a>
             </div>
             <div class="flex items-center space-x-4">
                 <button id="authButton" class="btn bg-gray-600 text-white hover:bg-gray-500">Loading...</button>
@@ -164,7 +164,12 @@
             <span id="message-content"></span>
         </div>
 
-        <div class="mb-6 p-4 border border-indigo-200 rounded-lg bg-indigo-50">
+        <div id="jobList" class="space-y-6">
+            <p class="text-center text-gray-500">Loading job experiences...</p>
+            <!-- Job experiences will be rendered here by JavaScript -->
+        </div>
+
+        <div class="mb-6 p-4 border border-indigo-200 rounded-lg bg-indigo-50 mt-6"> <!-- Added mt-6 for spacing -->
             <h2 class="text-xl font-semibold text-indigo-800 mb-4">Add New Job Experience</h2>
             <input type="text" id="jobNameInput" placeholder="Job Name (e.g., Senior Software Engineer)">
             <input type="text" id="jobCompanyInput" placeholder="Company Name (e.g., Google)">
@@ -173,11 +178,6 @@
             <textarea id="jobDescriptionInput" placeholder="Job Description (key responsibilities, achievements)"></textarea>
             <textarea id="jobSkillsInput" placeholder="Key Skills (comma-separated, e.g., Python, SQL, AWS)"></textarea>
             <button id="addJobBtn" class="btn btn-primary w-full">Add Job Experience</button>
-        </div>
-
-        <div id="jobList" class="space-y-6">
-            <p class="text-center text-gray-500">Loading job experiences...</p>
-            <!-- Job experiences will be rendered here by JavaScript -->
         </div>
     </div>
 
@@ -326,7 +326,7 @@
             jobList.innerHTML = ''; // Clear existing list
 
             if (jobData.length === 0) {
-                jobList.innerHTML = '<p class="text-center text-gray-500 py-4">No job experiences added yet. Use the form above to add one!</p>';
+                jobList.innerHTML = '<p class="text-center text-gray-500 py-4">No job experiences added yet. Use the form below to add one!</p>';
                 return;
             }
 
@@ -469,7 +469,8 @@
             editBtn.textContent = `Edit ${type === 'job' ? 'Job' : 'Subproject'}`;
             editBtn.classList.remove('btn-primary');
             editBtn.classList.add('btn-secondary');
-            element.querySelector('.cancel-edit-btn').remove(); // Remove cancel button
+            const cancelBtn = element.querySelector('.cancel-edit-btn');
+            if (cancelBtn) cancelBtn.remove();
         }
 
         async function saveChanges(element, type) {
