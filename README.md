@@ -1,10 +1,10 @@
 # Job Application AI Assistant
 
-This application provides a suite of AI-powered tools to streamline the job application process, helping users manage their job experiences, tailor resumes, generate cover letters, and utilize an AI agent network for comprehensive application assistance.
+This  is a vibe-coded application that provides a suite of AI-powered tools to streamline the job application process, helping users manage their job experiences, tailor resumes, generate cover letters, and utilize an AI agent network for comprehensive application assistance.
 
 ## Features
 
-### User Authentication
+### User Authentication (`login.html`)
 
 * **Secure Login:** Users can securely sign in using their Google account.
 
@@ -58,7 +58,7 @@ This tool assists in drafting professional cover letters.
 
 * **Company Context:** Leverages company information to ensure the cover letter's tone and emphasis align with the company's values.
 
-### AI Agent Network (`agent_network.html`)
+### AI Agent Network (`AI_Job_Tailor.html`)
 
 This integrated workflow streamlines the application process from job posting to tailored documents.
 
@@ -74,7 +74,7 @@ This integrated workflow streamlines the application process from job posting to
 
 ## Technologies Used
 
-* **Frontend:** HTML, Tailwind CSS, JavaScript
+* **Frontend:** HTML, Tailwind CSS, JavaScript (Express)
 
 * **Backend/Database:** Google Firebase (Authentication, Firestore)
 
