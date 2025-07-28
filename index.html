@@ -128,6 +128,41 @@
             margin-top: 1rem;
             flex-wrap: wrap;
         }
+        /* Styles for collapsible sub-project form */
+        .collapsible-subproject-header {
+            background-color: #e2e8f0;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 1rem;
+            transition: background-color 0.2s;
+        }
+        .collapsible-subproject-header:hover {
+            background-color: #cbd5e0;
+        }
+        .collapsible-subproject-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+            padding: 0 1rem; /* Initial padding, will expand */
+        }
+        .collapsible-subproject-content.expanded {
+            max-height: 1000px; /* Large enough to contain content */
+            transition: max-height 0.5s ease-in, padding 0.5s ease-in;
+            padding-bottom: 1rem; /* Add padding when expanded */
+            padding-top: 1rem;
+        }
+        .collapsible-subproject-header svg {
+            transition: transform 0.3s ease-out;
+        }
+        .collapsible-subproject-header.expanded svg {
+            transform: rotate(180deg);
+        }
     </style>
 </head>
 <body class="bg-gray-100 p-6">
@@ -384,14 +419,21 @@
                             `).join('')}
                         </div>
                         <div class="add-subproject-form mt-4 p-3 border border-gray-300 rounded-md bg-white">
-                            <h5 class="text-md font-semibold text-gray-700 mb-2">Add New Sub-Project</h5>
-                            <input type="text" class="sub-job-name-input" placeholder="Sub-Project Name">
-                            <input type="text" class="sub-job-role-input" placeholder="Role in Sub-Project">
-                            <input type="date" class="sub-job-date-start-input" placeholder="Start Date">
-                            <input type="date" class="sub-job-date-end-input" placeholder="End Date">
-                            <textarea class="sub-job-description-input" placeholder="Sub-Project Description"></textarea>
-                            <textarea class="sub-job-skills-input" placeholder="Sub-Project Skills (comma-separated)"></textarea>
-                            <button class="btn btn-primary text-sm add-subproject-btn">Add Sub-Project</button>
+                            <div class="collapsible-subproject-header">
+                                <h5 class="text-md font-semibold text-gray-700">Add New Sub-Project</h5>
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+                                    <path fill-rule="evenodd" d="M10 3a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 3ZM10 16.25a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 1 1.5 0v4.5a.75.75 0 0 1-.75.75ZM12.75 10a.75.75 0 0 0-.75-.75H4.5a.75.75 0 0 0 0 1.5h7.5a.75.75 0 0 0 .75-.75ZM15.5 10a.75.75 0 0 0-.75-.75h-2.5a.75.75 0 0 0 0 1.5h2.5a.75.75 0 0 0 .75-.75Z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <div class="collapsible-subproject-content">
+                                <input type="text" class="sub-job-name-input" placeholder="Sub-Project Name">
+                                <input type="text" class="sub-job-role-input" placeholder="Role in Sub-Project">
+                                <input type="date" class="sub-job-date-start-input" placeholder="Start Date">
+                                <input type="date" class="sub-job-date-end-input" placeholder="End Date">
+                                <textarea class="sub-job-description-input" placeholder="Sub-Project Description"></textarea>
+                                <textarea class="sub-job-skills-input" placeholder="Sub-Project Skills (comma-separated)"></textarea>
+                                <button class="btn btn-primary text-sm add-subproject-btn">Add Sub-Project</button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -426,6 +468,15 @@
                     const jobId = jobEntryDiv.dataset.id;
                     const subprojectIndex = parseInt(subprojectEntryDiv.dataset.subprojectIndex);
                     deleteSubproject(jobId, subprojectIndex);
+                };
+            });
+
+            // Add event listeners for collapsible sub-project forms
+            jobList.querySelectorAll('.collapsible-subproject-header').forEach(header => {
+                header.onclick = (e) => {
+                    const content = header.nextElementSibling; // The content div is the next sibling
+                    content.classList.toggle('expanded');
+                    header.classList.toggle('expanded'); // Toggle class on header for icon rotation
                 };
             });
         }
