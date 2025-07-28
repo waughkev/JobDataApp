@@ -146,8 +146,11 @@
         </p>
         <textarea id="extractedJobDescriptionOutput" class="output-textarea" readonly placeholder="The AI will extract the job description from the URL here."></textarea>
 
+        <!-- Company Context: This section has been commented out as per user request. -->
+        <!--
         <h2 class="text-xl font-semibold text-gray-700 mb-3">Company Context:</h2>
         <textarea id="companyContextOutput" class="output-textarea" readonly placeholder="AI-researched company context will appear here."></textarea>
+        -->
 
         <h2 class="text-xl font-semibold text-gray-700 mb-3">Tailored Resume Suggestions:</h2>
         <textarea id="tailoredResumeOutput" class="output-textarea" readonly placeholder="AI-tailored resume suggestions will appear here."></textarea>
@@ -196,7 +199,7 @@
         const jobUrlInput = document.getElementById('jobUrlInput');
         const runAgentNetworkBtn = document.getElementById('runAgentNetworkBtn');
         const extractedJobDescriptionOutput = document.getElementById('extractedJobDescriptionOutput');
-        const companyContextOutput = document.getElementById('companyContextOutput'); 
+        // const companyContextOutput = document.getElementById('companyContextOutput'); // Commented out
         const tailoredResumeOutput = document.getElementById('tailoredResumeOutput');
         const generatedCoverLetterOutput = document.getElementById('generatedCoverLetterOutput');
         const authButton = document.getElementById('authButton'); 
@@ -216,7 +219,7 @@
         // --- Utility Functions ---
         function showLoading(message = "Processing with AI agents...") {
             extractedJobDescriptionOutput.value = "";
-            companyContextOutput.value = ""; 
+            // companyContextOutput.value = ""; // Commented out
             tailoredResumeOutput.value = "";
             generatedCoverLetterOutput.value = "";
             remoteStatusDisplay.textContent = "N/A"; 
@@ -280,7 +283,7 @@
                 userIdDisplay.textContent = user.email || user.uid; 
                 authButton.textContent = 'Log Out';
                 authButton.onclick = async () => {
-                    showLoading("Logging out...");
+                    showLoading();
                     try {
                         await signOut(auth);
                         window.location.href = 'login.html'; 
@@ -810,7 +813,7 @@
             promptForCoverLetter += `\n\n**Instructions for Drafting:**`;
             promptForCoverLetter += `\n- Draft a concise and impactful cover letter (around 3-4 paragraphs) that directly addresses the requirements of the job description.`;
             promptForCoverLetter += `\n- **Crucially, when mentioning your specific job history (roles, companies, dates), ONLY use the information provided under "My Most Relevant Job Experiences." Do NOT infer or use company names or exact job titles from the "Examples of Past Cover Letter Phrasing and Tone." The past cover letter examples are for tone and phrasing inspiration ONLY.**`;
-            promptForCoverLetter += `\n- Highlight how your skills and experiences from your "My Most Relevant Job Experiences" make you an ideal candidate.`;
+            promptForCoverLetter += `\n- Highlight how your skills and experiences from your "My Most Relevant Job Experiences" make you an "ideal candidate."`;
             promptForCoverLetter += `\n- Identify key responsibilities from the job description and provide how you can meet those responsibilities`;
             promptForCoverLetter += `\n- Focus on specific achievements and quantifiable results where possible from my background.`;
             promptForCoverLetter += `\n- Maintain a professional, confident, and enthusiastic tone. Display empathy and tones of leadership`;
@@ -914,7 +917,6 @@
 
                 // Attempt to extract company name for research
                 let companyName = "";
-                // If URL was provided, try to extract company from URL first
                 if (urlProvided) {
                     try {
                         const urlObj = new URL(jobUrlInput.value.trim());
@@ -931,26 +933,25 @@
                     }
                 }
                 
-                // If company name still not found, try from job description
                 if (!companyName) {
                     const companyMatch = jobDescription.match(/at\s+([A-Z][a-zA-Z\s,\-]+?)\s*(?:inc\.|llc|ltd|corp|corporation|group|solutions|technologies|company|co\.)?/i);
                     companyName = companyMatch && companyMatch[1] ? companyMatch[1].trim() : '';
                 }
 
-                // Agent 3: Research Company (only if a company name is found)
-                let companyContext = "No company context generated.";
-                if (companyName) {
-                    companyContext = await researchCompany(companyName);
-                }
-                companyContextOutput.value = companyContext;
-                showMessage("Company context generated!", "success");
+                // Agent 3: Research Company (This call is now commented out)
+                let companyContext = "Company context generation is currently disabled.";
+                // if (companyName) {
+                //     companyContext = await researchCompany(companyName);
+                // }
+                // companyContextOutput.value = companyContext; // This line is also commented out
+                showMessage("Company context generation is currently disabled.", "info"); // Inform user
 
-                // Agent 4: Generate Tailored Resume
+                // Agent 4: Generate Tailored Resume (companyContext passed, but function handles empty string)
                 const tailoredResume = await generateTailoredResume(jobDescription, companyContext);
                 tailoredResumeOutput.value = tailoredResume;
                 showMessage("Tailored resume suggestions generated!", "success");
 
-                // Agent 5: Generate Cover Letter
+                // Agent 5: Generate Cover Letter (companyContext passed, but function handles empty string)
                 const coverLetter = await generateCoverLetter(jobDescription, companyContext);
                 generatedCoverLetterOutput.value = coverLetter;
                 showMessage("Cover letter draft generated!", "success");
