@@ -216,7 +216,7 @@
                 <a href="tailor.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Resume Tailor</a>
                 <a href="coverletter.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">Cover Letters</a>
                 <a href="cover_letter_writer.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">AI Cover Letter</a>
-                <a href="AI_Job_Tailor.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">AI Agent Network</a>
+                <a href="agent_network.html" class="text-white hover:text-indigo-300 font-medium transition duration-300">AI Agent Network</a>
             </div>
             <div class="flex items-center space-x-4">
                 <button id="authButton" class="btn bg-gray-600 text-white hover:bg-gray-500">Loading...</button>
@@ -357,7 +357,7 @@
         // --- Utility Functions ---
         function showLoading() {
             tailoredResumeOutput.value = "Generating tailored resume suggestions... This may take a moment.";
-            atsReviewOutput.value = "Generating ATS review notes..."; // Clear ATS output on new generation
+            atsReviewOutput.value = "Generating ATS review notes..."; 
             loadingOverlay.classList.remove('hidden');
         }
 
@@ -866,7 +866,7 @@
 
             let relevantExperienceString = '';
             if (topRelevantJobs.length > 0) {
-                relevantExperienceString = "\n\n**My Most Relevant Job Experiences (for factual details):**\n";
+                relevantExperienceString = "\n\n**My Most Relevant Job Experiences (for factual details, use these to tailor):**\n";
                 topRelevantJobs.forEach(item => {
                     relevantExperienceString += `- **${item.job["Job Name"]}** at **${item.job["Job Company"]}** (${item.job["Job Date Start"]} - ${item.job["Job Date End"]})\n`;
                     if (item.job["Job Description"]) {
@@ -886,16 +886,19 @@
                     });
                     relevantExperienceString += '\n'; // Add spacing between jobs
                 });
+            } else {
+                relevantExperienceString = "\n\n**My Most Relevant Job Experiences (No direct matches found in your saved data. Provide general tailoring advice based on the Job Description):**\n";
             }
 
             // --- 2. Construct LLM Prompt for Resume Tailoring ---
-            let promptForTailoring = `You are an expert resume writer. Your task is to provide tailored resume suggestions based on the provided job description and my relevant job experiences.`;
-            promptForTailoring += `\n\n**Job Description:**\n${jobDescriptionRaw}`;
-            promptForTailoring += `\n\n${relevantExperienceString}`; 
+            let promptForTailoring = `You are an expert resume writer. Your task is to provide tailored resume suggestions.`;
+            promptForTailoring += `\n\n**Job Description (Analyze this thoroughly):**\n${jobDescriptionRaw}`;
+            promptForTailoring += `\n${relevantExperienceString}`; 
             
-            promptForTailoring += `\n\n**Instructions for Tailoring:**`;
-            promptForTailoring += `\n- Analyze the job description and identify key skills, responsibilities, and qualifications.`;
-            promptForTailoring += `\n- For each of my "Most Relevant Job Experiences," suggest specific bullet points or phrases that highlight how my experience directly addresses the job description's requirements.`;
+            promptForTailoring += `\n\n**Instructions for Tailoring (STRICTLY FOLLOW THESE):**`;
+            promptForTailoring += `\n- Analyze the Job Description and identify key skills, responsibilities, and qualifications.`;
+            promptForTailoring += `\n- **IMPORTANT**: If "My Most Relevant Job Experiences" section contains specific job details, generate tailored bullet points or phrases for *each* of those experiences, showing how they directly address the job description's requirements.`;
+            promptForTailoring += `\n- If "My Most Relevant Job Experiences" section indicates no direct matches, provide general advice on how to tailor a resume for this Job Description, focusing on transferable skills and generic impactful statements.`;
             promptForTailoring += `\n- Focus on quantifiable achievements and results where possible.`;
             promptForTailoring += `\n- Suggest ways to rephrase existing resume bullet points to better align with the job description's language.`;
             promptForTailoring += `\n- If applicable, suggest a brief, impactful summary or objective statement tailored to this specific job.`;
@@ -919,6 +922,8 @@
                 const payloadTailoring = { contents: chatHistoryTailoring };
                 const apiKey = window.FIREBASE_API_KEY; 
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                console.log("Prompt sent to AI for Resume Tailoring:\n", promptForTailoring); // Log the full prompt
 
                 const responseTailoring = await fetch(apiUrl, {
                     method: 'POST',
